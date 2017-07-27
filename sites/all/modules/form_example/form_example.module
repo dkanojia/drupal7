@@ -1,0 +1,368 @@
+<?php
+
+/**
+ * @file
+ * Custom form in custom module.
+ */
+
+function form_example_menu() {
+  $items = array();
+
+  $items['examples/form-example'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'First Example Form', //page title
+    'description' => 'A form to mess around with.',
+    'file' => 'form_example_inc.inc',
+    'page callback' => '_get_rendering_element',
+    // 'access callback' => TRUE,
+    'access arguments' => array('administer my module'), // whatever see above
+  );
+
+  $items['examples/%node/form-json'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'Apis Example Form', //page title
+    'description' => 'An api of node detail.',
+    'file' => 'form_example_api_inc.inc',
+    'page callback' => '_get_api_json',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'), // whatever see above
+  );
+
+  $items['examples/form-json2'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'Apis Example Form', //page title
+    'description' => 'An api of node detail.',
+    'file' => 'form_example_api_inc.inc',
+    'page callback' => '_get_api_json2',
+    'access arguments' => array('access content'), // whatever see above
+  );
+
+  $items['mycontent/%node/delete_slot'] = array(
+    'title' => 'Delete slot',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('form_example_delete_form', 1),
+    'access arguments' => array('access content'), // whatever see above
+    'type' => MENU_CALLBACK    
+  );
+
+  $items['mycontent/%node/edit_slot'] = array(
+      'title' => 'Edit slot',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('form_example_edit_form', 1),
+      'access arguments' => array('edit content'), // whatever see above
+      'type' => MENU_CALLBACK
+  );
+
+  return $items;
+}
+
+
+function form_example_delete_form($form, &$form_state, $item)
+{
+  $form['#item'] = $item;
+  // Note confirm_form() can be used here, but I prefer to use my own for styling purposes
+  $form['header'] = array
+  (
+    '#markup' => t('Are you sure you wish to delete the item with a field value of @value?', array('@value' => $item->title)),
+    '#prefix' => '',
+    '#suffix' => '',
+  );
+  $form['warning'] = array
+  (
+    '#markup' => t('Warning, this action cannot be undone'),
+  '#prefix' => '',
+  '#suffix' => '',
+  );
+
+  $form['delete_button'] = array
+  (
+    '#type' => 'submit',
+    '#value' => t('Delete item'),
+  );
+
+  return $form;
+}
+
+function form_example_delete_form_submit($form, &$form_state)
+{
+  if($form_state['values']['op'] == $form_state['values']['delete_button'])
+  {
+    $item = $form['#item'];
+    db_delete('node')
+    ->condition('nid', $item->nid)
+    ->execute();
+  }
+  $form_state['redirect'] = '';
+  drupal_set_message(t('The item has been deleted'));
+}
+
+function form_example_edit_form($form, &$form_state, $item)
+{
+  // echo "<pre>";
+  // print_r($item);
+  // echo "</pre>";
+  // die;
+  $form['#item'] = $item;
+  // Note confirm_form() can be used here, but I prefer to use my own for styling purposes
+    
+  /**
+  Adding Css
+    */
+  drupal_add_css(drupal_get_path('module','form_example') . '/css/' . 'form_example.css');
+
+  // $form['#id'] = 'form_example';
+
+  $form['title'] = array(//you can find a list of available types in the form api
+    '#type' => 'textfield', 
+    '#title' => 'Name / Title',
+    '#default_value' => $item->title,
+    '#size' => 10,
+    '#maxlength' => 10,
+    '#required' => TRUE, //make this field required 
+  );
+
+  $form['high_school']['tests_taken'] = array(
+    '#type' => 'checkboxes',
+    '#options' => drupal_map_assoc(array(t('SAT'), t('ACT'))),
+    '#title' => t('What standardized tests did you take? 
+                  (Testing Of Multi CheckBoxes)'),
+    );
+
+  $today_date = array('year' => 2017, 'month' => 2, 'day' => 15);
+  
+  $existing_date = $item->field_date_iso_format_testing['und']['0']['value'];
+  $format = 'Y-m-d';
+  $existing_date = strtotime($existing_date);
+  $final_date = date($format, $existing_date);
+  $implode_date = explode('-', $final_date);
+
+  $year = $implode_date['0'] ;
+  $month = $implode_date['1'] ;
+  $day = $implode_date['2'] ; 
+  $currentDate = array('year' => $year, 'month' => $month, 'day' => $day);
+  // $newNode->field_date_iso_format_testing['und']['0']['value'] = $currentDate ;
+
+  $form['date_field'] = array(
+      '#type' => 'date',
+      '#title' => 'Choose Date (Testing of Date)',
+      '#default_value' => $currentDate,
+      // '#access' => FALSE,
+  );
+
+  // $fil_arr = array();
+  // $fil_arr = $item->field_image_testing['und']['0']['fid'];
+  // $arr = file_load($fil_arr);
+
+  //echo "<pre>";
+  //print_r($item->field_image_testing['und']);
+  // $imageArrayCout = count($item->field_image_testing['und']);
+  // //echo $imageArrayCout ;  
+  // //die;
+  // for($i=0; $i< $imageArrayCout; $i++){
+  //   //echo $item->field_image_testing['und'][$i]['filename']."<br/>";
+
+  //   $form['file'] = array(
+  //   '#type' => 'file',
+  //   '#name' => 'files',
+  //   // '#name' => 'files[]',
+  //   '#title' => t('Choose multi file (Testing of file field)'),
+  //   // '#attributes' => array('multiple' => 'multiple'),
+  //   '#default_value' => $item->field_image_testing['und'][$i]['filename'],
+  //   '#title_display' => 'invisible',
+  //   '#title_display' => 'after',
+  //   '#size' => 22,
+  //   '#theme_wrappers' => array(),
+  //   '#weight' => -10,
+  // );
+
+  // }
+  // die ;
+  // echo "</pre>";
+  // exit;
+
+  $form['radio_button'] = array(
+    '#type' => 'radio',
+    '#title' => 'Choose Default Option (Testing of Single Radio Button)',
+    '#ajax[event]' => 'change',
+    '#title_display' => 'after',
+  );
+
+  $admin = 'Admin';
+  $active = array(0 => t('Closed'), 1 => t('Active'));
+  $f = $form['settings']['active'] = array(
+    '#type' => 'radios',
+    '#title' => t('Poll status (Testing of Multi Radio Button)'),
+    '#default_value' => isset($node->active) ? $node->active : 1,
+    // '#default_value' => $node->active,
+    '#options' => $active,
+    '#description' => t('When a poll is closed, visitors can no longer vote for it.'),
+  );
+
+  $active2 = array('0' => t('2'), '1' => t('6'));
+  $f2 = $form['settings2']['active2'] = array(
+    '#type' => 'radios',
+    '#title' => t('Poll status (Testing of Multi Radio Button For Integer)'),
+    '#default_value' => isset($node->active2) ? $node->active2 : 1,
+    // '#default_value' => $node->active,
+    '#options' => $active2,
+    '#description' => t('When a poll is closed, visitors can no longer vote for it.'),
+    // '#access' => $admin,
+  );
+
+  $category = array('selected' => '0');
+  $form['selected'] = array(
+    '#type' => 'select',
+    '#title' => t('Selected (Testing of Selected)'),
+    '#options' => array(
+        0 => t('No'),
+        1 => t('Yes'),
+    ),
+   '#default_value' => $category['selected'],
+   '#description' => t('Set this to <em>Yes</em> , if you would like this 
+                        category to be selected by default.'),
+  );
+
+  $body = $item->body['und']['0']['value'];
+  $form['description'] = array(
+    '#type' => 'text_format',
+    '#title' => t('Description (Testing of Text Format)'),
+    '#default_value' => $body,
+    // '#format' => $term->format,
+    // '#weight' => 0,
+  );
+
+  $common_arr = array('year' => 2017, 'month' => 2, 'day' => 15);
+  $common_arr2 = 'hello';
+  $form['testfield'] = array(
+    '#type' => 'textfield', //you can find a list of available types in the form api
+    '#title' => 'Test Field (with field prefix)',
+    '#size' => 10,
+    '#maxlength' => 10,
+    // '#required' => TRUE, //make this field required 
+    // '#field_prefix' => url(NULL, NULL, NULL, TRUE) . (variable_get('clean_url', 0) ? '' : '?q=')
+    '#field_prefix' => url(NULL, $common_arr, NULL, TRUE) . (variable_get('clean_url', 0) ? '' : '?q=')
+  );
+
+  $form['edit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Edit item'),
+  );
+
+  return $form;
+}
+
+function form_example_edit_form_submit($form, &$form_state)
+{
+  global $user;
+
+  $item = $form['#item'];
+  // add node properties
+  $item->title = $form_state['values']['title'];
+  $item->body['und']['0'] = $form_state['values']['description'];
+  $item->field_list_integer_['und']['0']['value'] = $form_state['values']['active2'];
+  
+  $year = $form_state['values']['date_field']['year'] ;
+  $month = $form_state['values']['date_field']['month'] ;
+  $day = $form_state['values']['date_field']['day'] ;
+  $currentDate = $day."-".$month."-".$year ;
+  $item->field_date_iso_format_testing['und']['0']['value'] = $currentDate ;
+
+  node_save($item);
+  drupal_set_message('My Edited Node No :'.$item->nid);
+}
+
+function form_example_cron(){
+  
+  drupal_add_js('jQuery(document).ready(function () { alert("Hello!"); });', 'inline');
+
+  global $user;
+  // add node properties
+  $newNode = (object) NULL;
+  $newNode->type = 'newsletter';
+  $newNode->title = 'First Cron Title';
+  $newNode->body['und']['0'] = 'Cron description';
+  
+  $newNode->uid = $user->uid;
+  $newNode->created = strtotime("now");
+  $newNode->status = 1;
+  // $newNode->changed = strtotime("now");
+  // $newNode->comment = 0;
+  // $newNode->promote = 0;
+  // $newNode->moderate = 0;
+  // $newNode->sticky = 0;
+
+
+  node_save($newNode);
+  drupal_set_message('My Node No :'.$newNode->nid);
+
+  echo "successfully added node no :" . $newNode->nid;
+}
+
+function custom_func(){
+
+  return "this is first block made by an function";
+
+}
+//   $elements = [];
+  
+//   $getForm = drupal_get_form('form_example_form');
+
+//   $elements['render_form'] = array(
+//     '#markup' => _get_form_posted_data(),
+//     // '#prefix' => '<div class="custom_form_main_container">',
+//     // '#suffix' => '</div>'
+//   );
+
+//   return $elements;
+// }
+
+function form_example_block_info() {
+  // This example comes from node.module.
+  $blocks['first_custom_block'] = array(
+    'info' => t('First Custom Block'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  $blocks['recent'] = array(
+    'info' => t('Recent contents'),
+    // DRUPAL_CACHE_PER_ROLE will be assumed.
+  );
+
+  return $blocks;
+}
+
+function form_example_block_view($delta = '') {
+  // This example is adapted from node.module.
+  $block = array();
+
+  switch ($delta) {
+    case 'first_custom_block':
+      $block['subject'] = t('First Custom Block');
+      $block['content'] = custom_func();
+      break;
+
+    // case 'recent':
+    //   if (user_access('access content')) {
+    //     $block['subject'] = t('Recent content');
+    //     if ($nodes = node_get_recent(variable_get('node_recent_block_count', 10))) {
+    //       $block['content'] = array(
+    //         '#theme' => 'node_recent_block',
+    //         '#nodes' => $nodes,
+    //       );
+    //     }
+    //     else {
+    //       $block['content'] = t('No content available.');
+    //     }
+    //   }
+      // break;
+  }
+  return $block;
+}
+
+function form_example_permission(){
+  return array(
+      'administer my module' => array(
+       'title' => t('Administer my module'),
+       'description' => t('Perform administration tasks for my module.'),
+      ),
+    );
+}
+
+?>
