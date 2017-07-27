@@ -6,6 +6,12 @@
 
 function inc (){
 
+
+  /**
+   * @file
+   * Inc File for form in custom module.
+   */
+
   function _get_rendering_element() {
     $elements = [];
     
@@ -206,6 +212,97 @@ function inc (){
       '#title' => t('Field Set Text Settings (Testing Of FieldSet Text)'),
       '#description' => 'FieldSet Text',
     );
+
+    $images = array(
+      array(
+        'fid' => 1, 
+        'image_name' => '
+          <table class="sticky-header" style="position: fixed; top: 29px; left: 56px; visibility: hidden;">
+            <thead style="display: block;">
+              <tr>
+                <th>File information</th>
+                <th class="tabledrag-hide" style="display: none;">Weight</th>
+                <th>Operations</th> 
+              </tr>
+            </thead>
+          </table>
+          <table id="edit-field-image-testing-und-table" class="sticky-enabled tabledrag-processed tableheader-processed sticky-table">
+            <thead>
+              <tr>
+                <th>File information</th>
+                <th class="tabledrag-hide" style="display: none;">Weight</th>
+                <th>Operations</th> 
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="draggable odd">
+                <td>
+                  <a href="#" class="tabledrag-handle" title="Drag to re-order">
+                    <div class="handle">&nbsp;</div>
+                  </a>
+                  <div class="image-widget form-managed-file clearfix">
+                    <div class="image-preview">
+                      <img typeof="foaf:Image" src="http://localhost/drupal-7.56/sites/default/files/styles/thumbnail/public/image_example_images/screenshot_9.png?itok=G3fvcsfo" alt="" width="100" height="74">
+                    </div>
+                    <div class="image-widget-data">
+                      <span class="file">
+                        <img class="file-icon" alt="Image icon" title="image/png" src="/drupal-7.56/modules/file/icons/image-x-generic.png"> 
+                          <a href="http://localhost/drupal-7.56/sites/default/files/image_example_images/screenshot_9.png" type="image/png; length=19658">screenshot.png
+                          </a>
+                      </span>  
+                      <span class="file-size">(19.2 KB)</span> 
+                      <input name="field_image_testing[und][0][fid]" value="224" type="hidden">
+                      <input name="field_image_testing[und][0][display]" value="1" type="hidden">
+                      <input name="field_image_testing[und][0][width]" value="294" type="hidden">
+                      <input name="field_image_testing[und][0][height]" value="219" type="hidden">
+                    </div>
+                  </div>
+                </td>
+                <td class="tabledrag-hide" style="display: none;">
+                  <div class="form-item form-type-select form-item-field-image-testing-und-0--weight">
+                      <label class="element-invisible" for="edit-field-image-testing-und-0-weight">Weight for screenshot.png </label>
+                      <select class="edit-field-image-testing-und-weight form-select" id="edit-field-image-testing-und-0-weight" name="field_image_testing[und][0][_weight]">
+                        <option value="-4">-4</option>
+                        <option value="-3">-3</option>
+                        <option value="-2">-2</option>
+                        <option value="-1">-1</option>
+                        <option value="0" selected="selected">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                      </select>
+                  </div>
+                </td>
+                <td>
+                  <input id="edit-field-image-testing-und-0-remove-button" name="field_image_testing_und_0_remove_button" value="Remove" class="form-submit ajax-processed" type="submit">
+                </td> 
+              </tr>
+            </tbody>
+          </table>
+        ',
+        ),
+    );
+
+    $image_header = array(
+      'image_name' => t('Image Name'),
+      // 'last_name' => t('Last Name'),
+    );
+
+    $image_options = array();
+    foreach ($images as $img) {
+      $image_options[$img['fid']] = array(
+        'image_name' => $img['image_name'],
+        // 'last_name' => $user['last_name'],
+      );
+    }
+
+    $form['image_table'] = array(
+      '#type' => 'tableselect',
+      '#header' => $image_header,
+      '#options' => $image_options,
+      '#empty' => t('No users found'),
+    );  
 
     $form['file'] = array(
       '#type' => 'file',
@@ -547,6 +644,26 @@ function inc (){
 
       node_save($node);
       drupal_set_message('My Edited Node No :'.$node->nid);
+    
+      // $tableArray = array(
+      //   'Category Table' => 'id
+      //                       cat_name
+      //                       cat_descr
+      //                       parent_cat_id', 
+        
+      //   'Product Table' => 'id
+      //                       cat_id
+      //                       prod_name
+      //                       prod_descr
+      //                       prod_price
+      //                       currency_id
+      //                       ',
+
+      //   'Currency Table' => 'id
+      //                       curr_name
+      //                       curr_value', 
+      //   '' => '', 
+      // );
     }
   }
 
@@ -556,7 +673,13 @@ function inc (){
 Module File
 */
 function mod(){
-  
+
+
+  /**
+   * @file
+   * Custom form in custom module.
+   */
+
   function form_example_menu() {
     $items = array();
 
@@ -564,7 +687,9 @@ function mod(){
       'title' => 'First Example Form', //page title
       'description' => 'A form to mess around with.',
       'file' => 'form_example_inc.inc',
-      'access callback' => TRUE,
+      'page callback' => '_get_rendering_element',
+      // 'access callback' => TRUE,
+      'access arguments' => array('administer my module'), // whatever see above
     );
 
     $items['examples/%node/form-json'] = array( //this creates a URL that will call this form at "examples/form-example"
@@ -676,6 +801,7 @@ function mod(){
       );
 
     $today_date = array('year' => 2017, 'month' => 2, 'day' => 15);
+    
     $existing_date = $item->field_date_iso_format_testing['und']['0']['value'];
     $format = 'Y-m-d';
     $existing_date = strtotime($existing_date);
@@ -722,22 +848,9 @@ function mod(){
     // );
 
     // }
-   // die ;
+    // die ;
     // echo "</pre>";
     // exit;
-    $form['file'] = array(
-      '#type' => 'file',
-      '#name' => 'files',
-      // '#name' => 'files[]',
-      '#title' => t('Choose multi file (Testing of file field)'),
-      // '#attributes' => array('multiple' => 'multiple'),
-      '#default_value' => $arr,
-      '#title_display' => 'invisible',
-      '#title_display' => 'after',
-      '#size' => 22,
-      '#theme_wrappers' => array(),
-      '#weight' => -10,
-    );
 
     $form['radio_button'] = array(
       '#type' => 'radio',
@@ -858,11 +971,22 @@ function mod(){
   }
 
   function custom_func(){
-    // global $use;
-    // $use = '1';
-    // return print_r($use);
+
     return "this is first block made by an function";
+
   }
+  //   $elements = [];
+    
+  //   $getForm = drupal_get_form('form_example_form');
+
+  //   $elements['render_form'] = array(
+  //     '#markup' => _get_form_posted_data(),
+  //     // '#prefix' => '<div class="custom_form_main_container">',
+  //     // '#suffix' => '</div>'
+  //   );
+
+  //   return $elements;
+  // }
 
   function form_example_block_info() {
     // This example comes from node.module.
@@ -886,7 +1010,6 @@ function mod(){
     switch ($delta) {
       case 'first_custom_block':
         $block['subject'] = t('First Custom Block');
-        // $block['content'] = t('Syndicate');
         $block['content'] = custom_func();
         break;
 

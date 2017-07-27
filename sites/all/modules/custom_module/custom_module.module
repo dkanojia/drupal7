@@ -154,15 +154,15 @@ function custom_module_user_form_process($element, &$form_state) {
     '#type' => 'container',
     '#attributes' => array('class'=>array('col-md-12','col-sm-12','col-xs-12','project-details-left'),),
   );
-  // $query = db_select('node', 'n');
-  // $query->join('field_data_field_contact_name', 'na', 'n.nid = na.entity_id');  
-  // $query->fields('n',array('nid'));
-  // $query->fields('na',array('field_contact_name_value'));
-  // $result = $query->execute();
-  // $contact_list = array('' => 'None'); 
-  //   while($row = $result->fetchAssoc()) {
-  //      $contact_list[ $row['nid'] ]= $row['field_contact_name_value']; 
-  //   }      
+  $query = db_select('node', 'n');
+  $query->join('field_data_field_contact_name', 'na', 'n.nid = na.entity_id');  
+  $query->fields('n',array('nid'));
+  $query->fields('na',array('field_contact_name_value'));
+  $result = $query->execute();
+  $contact_list = array('' => 'None'); 
+    while($row = $result->fetchAssoc()) {
+       $contact_list[ $row['nid'] ]= $row['field_contact_name_value']; 
+    }      
   $element['full-container']['node-list'] = array(
     '#type' => 'select',
     '#title' => t('Selected'),

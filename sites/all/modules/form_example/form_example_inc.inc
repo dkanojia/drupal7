@@ -6,7 +6,6 @@
  */
 
 function _get_rendering_element() {
-
   $elements = [];
   
   $getForm = drupal_get_form('form_example_form');
@@ -24,86 +23,6 @@ function _get_rendering_element() {
   );
 
   return $elements;
-}
-
-function form_example_form_custom_add ($form, &$form_state, $no_js = NULL) {
-
-    // drupal_add_js('//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit','external');
-    // drupal_add_js('function googleTranslateElementInit() { new google.translate.TranslateElement({pageLanguage: "en",  multilanguagePage: true, layout: google.translate.TranslateElement.FloatPosition.BOTTOM_RIGHT},     "custom-user-data-listing-cust2")  }', 'inline');
-  //$form['#attributes']['class'] = array('program_testing_form');
-
-  if(empty($form_state['asset_cat_first_storage'])) {
-      $tempIdentifer = uniqid();
-      $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
-    }
-   
-  //$form_state['custom_contact_hobbey_storage'] = array();
-  if(empty($form_state['custom_contact_hobbey_default_value'])) {    
-    $form_state['custom_contact_hobbey_default_value'] = array();   
-  }
-  //dpm($form_state['triggering_element']);  
-  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'node-list' ) {    
-    $triggeringElement = $form_state['triggering_element'];    
-    $edit_id = $triggeringElement['#value'];      
-    $edit_node = node_load($edit_id);  
-    $form_state['asset_cat_first_storage'] = array();
-    $form_state['custom_contact_hobbey_default_value'] = array();
-    
-    $hobbies = $edit_node->field_contact_hobies;
-         
-    foreach($hobbies['und'] as $hobby => $val) { 
-        
-      $tempIdentifer = uniqid();  
-       
-      $form_state['asset_cat_first_storage'][] = $tempIdentifer;
-    
-      $form_state['custom_contact_hobbey_default_value'][$tempIdentifer] = $val['value']; 
-       
-    } 
-  }
-      
-  $form['main-container'] = array(
-    '#type' => 'container',
-    '#attributes' => array('class'=>array('row')), 
-    '#prefix' => '<div class="clearfix margin-bottom-10"><div id="project_test_data_container" class="project-detail project_test_data_container">', 
-    '#suffix' => '</div></div>',
-    // '#process' => array('custom_module_user_form_process'), 
-    '#process' => array('form_example_form'), 
-  );
-
-  $form['container-prefix'] = array(
-    '#markup' => '<div id="main-container-multi-replace">',
-  );
-  $form['main-container-multi'] = array( 
-    '#type' => 'container',
-    '#attributes' => array('class'=>array('row')), 
-    '#prefix' => '<div class="clearfix margin-bottom-10"><div id="asset-container-section" class="project-detail project_test_data_container alert-container-section">', 
-    '#suffix' => '</div></div>',
-    '#process' => array('custom_contact_multiple_hobbies_process'), 
-  );
-  $form['container-suffix'] = array(
-    '#markup' => '</div>',
-  );        
-  $form['edit-nodeId'] = array(
-    '#type' => 'hidden', 
-    '#attributes' => array('id' => 'edit-nodeId'),
-  );     
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'), 
-    '#submit' => array('test_program_data_submit'),
-    '#ajax' => array(      
-      'callback' => 'custom_save_contact_data',       
-      'wrapper' => 'custom-user-data-listing-cust',
-      'method' => 'replace',
-      'effect' => 'fade',       
-    ), 
-    '#prefix' => '<div class="pull-left custom-test-program margin-bottom-10">',
-    '#suffix' => '</div>', 
-  ); 
-       
-  return $form;
-
 }
 
 function _get_form_posted_data() {
@@ -182,8 +101,7 @@ function _get_form_posted_data() {
   return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
 }
 
-// function form_example_form($form, &$form_state) {
-function form_example_form($element, &$form_state) {
+function form_example_form($form, &$form_state) {
   
   if(isset($_GET['n_id'])){
     $nodeData = [];
@@ -203,12 +121,6 @@ function form_example_form($element, &$form_state) {
   */
   // drupal_goto('test', array('query'=>array('variable_name1'=>'variable_value1)));
   
-  $element['full-container']= array(
-    '#type' => 'container',
-    '#attributes' => array('class'=>array('col-md-12','col-sm-12','col-xs-12','project-details-left'),),
-  );
-
-
   $form['#id'] = 'form_example';
   
   $form['hidden_nid'] = array(
