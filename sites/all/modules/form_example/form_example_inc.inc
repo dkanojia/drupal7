@@ -6,6 +6,7 @@
  */
 
 function _get_rendering_element() {
+
   $elements = [];
   
   $getForm = drupal_get_form('form_example_form');
@@ -16,10 +17,16 @@ function _get_rendering_element() {
     // '#suffix' => '</div>'
   );
   
+  // $elements['custom_user_listing'] = array(
+  //   '#markup' => custom_get_user_table_data(),
+  //   '#prefix' =>'<div class="clearfix margin-bottom-10"><div class="project-summary-listing" id="custom-user-data-listing-cust2">',
+  //   '#suffix' =>'</div></div>',
+  // );
+
   $elements['render_table'] = array(
     '#markup' => _get_form_posted_data(),
-    '#prefix' => '<div class="custom_form_main_container">',
-    '#suffix' => '</div>'
+    '#prefix' => '<div class="custom_form_main_container"> <div class="project-summary-listing" id="form-example-data-listing">',
+    '#suffix' => '</div></div>'
   );
 
   return $elements;
@@ -101,12 +108,136 @@ function _get_form_posted_data() {
   return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
 }
 
-function form_example_form($form, &$form_state) {
-  
-  if(isset($_GET['n_id'])){
-    $nodeData = [];
-    $nodeData = node_load($_GET['n_id']);  
+
+function form_example_form($form, &$form_state, $no_js = NULL){
+
+  if(empty($form_state['asset_cat_first_storage'])) {
+      $tempIdentifer = uniqid();
+      $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
+    }
+   
+  if(empty($form_state['form_example_form_subject_value'])) {    
+    $form_state['form_example_form_subject_value'] = array();   
   }
+
+  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'node-list' ) {    
+    $triggeringElement = $form_state['triggering_element'];    
+    $edit_id = $triggeringElement['#value'];      
+    $edit_node = node_load($edit_id);  
+    $form_state['asset_cat_first_storage'] = array();
+    $form_state['form_example_form_subject_value'] = array();
+    
+    $subject = $edit_node->field_subject;
+         
+    foreach($subjects['und'] as $subject => $val) { 
+        
+      $tempIdentifer = uniqid();  
+       
+      $form_state['asset_cat_first_storage'][] = $tempIdentifer;
+    
+      $form_state['form_example_form_subject_value'][$tempIdentifer] = $val['value']; 
+       
+    } 
+  }
+      
+  $form['main-container'] = array(
+    '#type' => 'container',
+    '#attributes' => array('class'=>array('row')), 
+    '#prefix' => '<div class="clearfix margin-bottom-10"><div id="project_test_data_container" class="project-detail project_test_data_container">', 
+    '#suffix' => '</div></div>',
+    '#process' => array('form_example_form_process'), 
+  );
+
+  $form['container-prefix'] = array(
+    '#markup' => '<div id="main-container-multi-replace">',
+  );
+
+  $form['main-container-multi'] = array( 
+    '#type' => 'container',
+    '#attributes' => array('class'=>array('row')), 
+    '#prefix' => '<div class="clearfix margin-bottom-10"><div id="asset-container-section" class="project-detail project_test_data_container alert-container-section">', 
+    '#suffix' => '</div></div>',
+    '#process' => array('form_example_multiple_subject_process'), 
+  );
+
+  $form['container-suffix'] = array(
+    '#markup' => '</div>',
+  );
+
+  $form['edit-nodeId'] = array(
+    '#type' => 'hidden', 
+    '#attributes' => array('id' => 'edit-nodeId'),
+  );
+
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Form Data'), 
+    // '#submit' => array('test_program_data_submit'),
+    '#submit' => array('form_example_form_submit'),
+    '#ajax' => array(      
+      // 'callback' => 'custom_save_contact_data',       
+      'callback' => 'form_example_save_newsletter_data',       
+      // 'wrapper' => 'custom-user-data-listing-cust',
+      'wrapper' => 'form-example-data-listing',
+      'method' => 'replace',
+      'effect' => 'fade',       
+    ), 
+    '#prefix' => '<div class="pull-left custom-test-program margin-bottom-10">',
+    '#suffix' => '</div>', 
+  );
+
+  return $form;
+
+}
+
+function form_example_save_newsletter_data($form, &$form_state) {
+    $tempIdentifer = uniqid();
+    $form_state['asset_cat_first_storage'] = array();
+    $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
+    $commands = array();    
+    $commands[] = ajax_command_invoke('#edit-title', 'val', array(''));
+    $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
+    $commands[] = ajax_command_invoke('#edit-description-value', 'val', array(''));
+
+    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+    $commands[] = ajax_command_html('#main-container-multi-replace', render($form['main-container-multi']));
+    return array('#type' => 'ajax', '#commands' => $commands); 
+}
+
+// function form_example_form_process($form, &$form_state) {
+function form_example_form_process($element, &$form_state) {
+  
+  $element['full-container']= array(
+    '#type' => 'container',
+    '#attributes' => array('class'=>array('col-md-12','col-sm-12','col-xs-12','project-details-left'),),
+  );
+  // $query = db_select('node', 'n');
+  // $query->join('field_data_field_contact_name', 'na', 'n.nid = na.entity_id');  
+  // $query->fields('n',array('nid'));
+  // $query->fields('na',array('field_contact_name_value'));
+  // $result = $query->execute();
+  // $contact_list = array('' => 'None'); 
+  //   while($row = $result->fetchAssoc()) {
+  //      $contact_list[ $row['nid'] ]= $row['field_contact_name_value']; 
+  //   }      
+  // $element['full-container']['node-list'] = array(
+  //   '#type' => 'select',
+  //   '#title' => t('Selected'),
+  //   '#options' =>$contact_list, 
+  //   '#prefix' =>'<div style="display:none;">',
+  //   '#suffix' =>'</div>',
+  //   '#ajax' => array( 
+  //     'callback' => 'custom_contact_edit_form_callback',  
+  //     'wrapper' => 'project_test_data_container',  
+  //   ),
+  //   '#attributes' => array('class'=> array('edit-custom-node-select')),
+  // );
+  
+  /**---------------*/
+  // if(isset($_GET['n_id'])){
+  //   $nodeData = [];
+  //   $nodeData = node_load($_GET['n_id']);  
+  // }
   /**
   Adding Css
     */
@@ -121,29 +252,29 @@ function form_example_form($form, &$form_state) {
   */
   // drupal_goto('test', array('query'=>array('variable_name1'=>'variable_value1)));
   
-  $form['#id'] = 'form_example';
+  // $form['#id'] = 'form_example';
   
-  $form['hidden_nid'] = array(
+  $element['full-container']['hidden_nid'] = array(
     '#type' => 'hidden', 
     '#value' => isset($_GET['n_id']) ? $_GET['n_id'] : '',
   );
 
-  $form['title'] = array(//you can find a list of available types in the form api
+  $element['full-container']['title'] = array(//you can find a list of available types in the form api
     '#type' => 'textfield', 
     '#title' => 'Name / Title',
     '#size' => 10,
-    '#default_value' => isset($nodeData->title) ? $nodeData->title : ' ',
+    // '#default_value' => isset($nodeData->title) ? $nodeData->title : ' ',
     '#maxlength' => 10,
     '#required' => TRUE, //make this field required 
   );
 
-  $form['copy'] = array(  
+  $element['full-container']['copy'] = array(  
     '#type' =>'checkbox', 
     '#title' => t('Send me a copy. (Testing Of checkbox)'),
-    '#default_value' => isset($nodeData->field_boolean_on_off_check_box_['und']['0']['value']) ? $nodeData->field_boolean_on_off_check_box_['und']['0']['value'] : 0,
+    // '#default_value' => isset($nodeData->field_boolean_on_off_check_box_['und']['0']['value']) ? $nodeData->field_boolean_on_off_check_box_['und']['0']['value'] : 0,
   );
 
-  $form['high_school']['tests_taken'] = array(
+  $element['full-container']['high_school']['tests_taken'] = array(
     '#type' => 'checkboxes',
     '#options' => drupal_map_assoc(array(t('SAT'), t('ACT'))),
     '#title' => t('What standardized tests did you take? 
@@ -153,27 +284,27 @@ function form_example_form($form, &$form_state) {
   
   $currentDate = array('year' => 2017, 'month' => 2, 'day' => 15);
 
-  if(isset($nodeData->field_date_iso_format_testing['und']['0']['value'])){
-    $existing_date = $nodeData->field_date_iso_format_testing['und']['0']['value'];
-    $format = 'Y-m-d';
-    $existing_date = strtotime($existing_date);
-    $final_date = date($format, $existing_date);
-    $implode_date = explode('-', $final_date);
+  // if(isset($nodeData->field_date_iso_format_testing['und']['0']['value'])){
+  //   $existing_date = $nodeData->field_date_iso_format_testing['und']['0']['value'];
+  //   $format = 'Y-m-d';
+  //   $existing_date = strtotime($existing_date);
+  //   $final_date = date($format, $existing_date);
+  //   $implode_date = explode('-', $final_date);
 
-    $year = $implode_date['0'] ;
-    $month = $implode_date['1'] ;
-    $day = $implode_date['2'] ; 
-    $currentDate = array('year' => $year, 'month' => $month, 'day' => $day);
-  }
+  //   $year = $implode_date['0'] ;
+  //   $month = $implode_date['1'] ;
+  //   $day = $implode_date['2'] ; 
+  //   $currentDate = array('year' => $year, 'month' => $month, 'day' => $day);
+  // }
 
-  $form['date_field'] = array(
+  $element['full-container']['date_field'] = array(
       '#type' => 'date',
       '#title' => 'Choose Date (Testing of Date)',
-      '#default_value' => $currentDate,
+      // '#default_value' => $currentDate,
       // '#access' => FALSE,
   );
 
-  $form['vertical_tabs_container'] = array(
+  $element['full-container']['vertical_tabs_container'] = array(
 
     '#type' => 'vertical_tabs', 
     '#title' => t('Verical Tab Example (Testing Of Verical Tabs)'), 
@@ -182,7 +313,7 @@ function form_example_form($form, &$form_state) {
   );
 
 
-  $form['contact'] = array(
+  $element['full-container']['contact'] = array(
 
     '#type' => 'fieldset', 
     '#title' => t('Contact settings (Testing Of FieldSet)'), 
@@ -199,7 +330,7 @@ function form_example_form($form, &$form_state) {
       </ul>',
   );
 
-  $form['contact']['fieldset_text'] = array(
+  $element['full-container']['contact']['fieldset_text'] = array(
 
     '#type' => 'textfield', 
     '#title' => t('Field Set Text Settings (Testing Of FieldSet Text)'),
@@ -290,21 +421,21 @@ function form_example_form($form, &$form_state) {
     );
   }
 
-  $form['image_table'] = array(
+  $element['full-container']['image_table'] = array(
     '#type' => 'tableselect',
     '#header' => $image_header,
     '#options' => $image_options,
     '#empty' => t('No users found'),
   );  
 
-  $form['file'] = array(
+  $element['full-container']['file'] = array(
     '#type' => 'file',
     '#name' => 'files[]',
     '#title' => t('Choose multi file (Testing of file field)'),
     '#attributes' => array('multiple' => 'multiple'),
   );
 
-  $form['machine_name'] = array(
+  $element['full-container']['machine_name'] = array(
     '#type' => 'machine_name',
     // '#default_value' => $vocabulary->machine_name,
     '#default_value' => 'machine_name',
@@ -314,7 +445,7 @@ function form_example_form($form, &$form_state) {
     // ),
   );
 
-  $form['username'] = array(
+  $element['full-container']['username'] = array(
     '#type' => 'textfield', //you can find a list of available types in the form api
     '#title' => 'User Name',
     '#size' => 10,
@@ -322,18 +453,18 @@ function form_example_form($form, &$form_state) {
     '#required' => TRUE, //make this field required 
   );
 
-  $form['password_field'] = array(
+  $element['full-container']['password_field'] = array(
     '#type' => 'password',
     '#title' => 'Set Password',
   );
 
-  $form['pass'] = array(
+  $element['full-container']['pass'] = array(
     '#type' => 'password_confirm', 
     '#title' => t('Retype Pwd (Testing Password Confirm)'),
     '#size' => 25,
   );
 
-  $form['radio_button'] = array(
+  $element['full-container']['radio_button'] = array(
     '#type' => 'radio',
     '#title' => 'Choose Default Option (Testing of Single Radio Button)',
     '#ajax[event]' => 'change',
@@ -353,10 +484,10 @@ function form_example_form($form, &$form_state) {
   );
 
   $active2 = array('1' => t('1'), '5' => t('5'), '6' => t('6'), '9' => t('9'));
-  $f2 = $form['settings2']['active2'] = array(
+  $f2 = $element['full-container']['settings2']['active2'] = array(
     '#type' => 'radios',
     '#title' => t('Poll status (Testing of Multi Radio Button For Integer)'),
-    '#default_value' => isset($nodeData->field_list_integer_['und']['0']['value']) ? $nodeData->field_list_integer_['und']['0']['value'] : 1,
+    // '#default_value' => isset($nodeData->field_list_integer_['und']['0']['value']) ? $nodeData->field_list_integer_['und']['0']['value'] : 1,
     // '#default_value' => $node->active,
     '#options' => $active2,
     '#description' => t('When a poll is closed, visitors can no longer vote for it.'),
@@ -364,7 +495,7 @@ function form_example_form($form, &$form_state) {
   );
 
   $category = array('selected' => '0');
-  $form['selected'] = array(
+  $element['full-container']['selected'] = array(
     '#type' => 'select',
     '#title' => t('Selected (Testing of Selected)'),
     '#options' => array(
@@ -395,7 +526,7 @@ function form_example_form($form, &$form_state) {
     );
   }
 
-  $form['table'] = array(
+  $element['full-container']['table'] = array(
     '#type' => 'tableselect',
     '#header' => $header,
     '#options' => $options,
@@ -405,22 +536,22 @@ function form_example_form($form, &$form_state) {
   if(isset($nodeData->body['und']['0']['value']))
     $body = $nodeData->body['und']['0']['value'];
 
-  $form['description'] = array(
+  $element['full-container']['description'] = array(
     '#type' => 'text_format',
     '#title' => t('Description (Testing of Text Format)'),
-    '#default_value' => isset($body) ? $body : '',
+    // '#default_value' => isset($body) ? $body : '',
   );
 
-  $form['keywords'] = array(
+  $element['full-container']['keywords'] = array(
     '#title' => t('Keywords (Testing of Text Area)'),
     '#type' => 'textarea',
     '#description' => t('The comment will be unpublished if it contains any of 
       the phrases above. Use a case-sensitive, comma-separated list of phrases. 
       Example: funny, bungee jumping, "Company, Inc."'),
-    '#default_value' => isset(  $context['keywords']) ? drupal_implode_tags($context['keywords']) : '',
+    // '#default_value' => isset(  $context['keywords']) ? drupal_implode_tags($context['keywords']) : '',
   );
 
-  $form['price'] = array(
+  $element['full-container']['price'] = array(
     '#type' => 'textfield', //you can find a list of available types in the form api
     '#title' => 'What is Your Price? (Testing of Text Field)',
     '#size' => 10,
@@ -429,7 +560,7 @@ function form_example_form($form, &$form_state) {
   );
 
   $edit = array('weight' => 0);
-  $form['weight'] = array(
+  $element['full-container']['weight'] = array(
     '#type' => 'weight', 
     '#title' => t('Weight (Testing of weight to decide the order)'), 
     '#default_value' => $edit['weight'], 
@@ -442,7 +573,7 @@ function form_example_form($form, &$form_state) {
 
   $common_arr = array('year' => 2017, 'month' => 2, 'day' => 15);
   $common_arr2 = 'hello';
-  $form['testfield'] = array(
+  $element['full-container']['testfield'] = array(
     '#type' => 'textfield', //you can find a list of available types in the form api
     '#title' => 'Test Field (with field prefix)',
     '#size' => 10,
@@ -455,7 +586,7 @@ function form_example_form($form, &$form_state) {
   $multiple_form = array('1','2','3','4');
 
   foreach ($multiple_form as $key => $value) {
-    $form['from1'.$value] = array(
+    $element['full-container']['from1'.$value] = array(
       '#type' => 'item',
 
       '#title' => t('Item '.$value.' (Testing Of Item)'),
@@ -466,7 +597,7 @@ function form_example_form($form, &$form_state) {
 
   // Special Elements 
 
-  $form['preview'] = array(
+  $element['full-container']['preview'] = array(
     '#type' => 'button', 
     '#value' => t('Preview'), 
     // '#weight' => 19,
@@ -479,8 +610,8 @@ function form_example_form($form, &$form_state) {
   // if ($elements) {
     // Also aid in theming of field widgets by rendering a classified
     // container.
-    $form['container'] = array(
-      '#type' => 'container',
+    // $element['full-container']['container'] = array(
+    //   '#type' => 'container',
       // '#attributes' => array(
         // 'class' => array(
           // 'field-type-' . drupal_html_class($field['type']),
@@ -489,11 +620,11 @@ function form_example_form($form, &$form_state) {
         // ),
       // ),
       // '#weight' => $instance['widget']['weight'],
-    );
+    // );
   // }
 
   $options = array('image' =>'http://localhost/drupal-7.56/themes/bartik/logo.png');
-  $form['go'] = array(
+  $element['full-container']['go'] = array(
       '#type' => 'image_button',
       '#src' => $options['image'],
       '#submit' => array('ctools_jump_menu_submit'),
@@ -503,36 +634,121 @@ function form_example_form($form, &$form_state) {
     );
 
   $bid = '1'; 
-  $form['bid'] = array(
+  $element['full-container']['bid'] = array(
     '#type' => 'hidden', 
     '#value' => $bid
   );
 
-  $form['vid'] = array(
+  $element['full-container']['vid'] = array(
     '#type' => 'value', 
     '#value' => $bid
   );
 
-  $form['actions'] = array('#type' => 'actions');
+  // $element['full-container']['actions'] = array('#type' => 'actions');
   
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit Form'),
-  );
+  // $element['full-container']['actions']['submit'] = array(
+  //   '#type' => 'submit',
+  //   '#value' => t('Submit Form'),
+  // );
 
-  $form['actions']['delete'] = array(
-    '#type' => 'button',
-    '#value' => t('Reset Form'),
-  );
+  // $element['full-container']['actions']['delete'] = array(
+  //   '#type' => 'button',
+  //   '#value' => t('Reset Form'),
+  // );
 
-  $form['actions']['cancel'] = array(
-    '#markup' => l(t('Cancel Form'), 'foo/bar'),
-  );
+  // $element['full-container']['actions']['cancel'] = array(
+  //   '#markup' => l(t('Cancel Form'), 'foo/bar'),
+  // );
 
   $status = array('3');
   $options = array('0','1','2','3','4');
 
-  return $form;
+  return $element;
+}
+
+// function form_example_multiple_subject_process($element,&$form_state) {
+function form_example_multiple_subject_process($element, &$form_state) {
+  
+
+  $storage = $form_state['asset_cat_first_storage'];
+
+  $element['#storage'] = $storage;
+  
+  $element['fieldset_container'] = array(
+      '#type' => 'fieldset',
+    '#title' => t('Your Subject'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE, 
+  );
+  
+  foreach ($storage as $key => $uniqId) {    
+    $element['fieldset_container']['test_name'][$uniqId] = array(
+      '#type' => 'textfield',
+      '#attributes'=> array('class'=> array('form-control','test_name','bg-yellow')),
+      '#parents' => array('postedData',$uniqId,'test_name'),
+      '#prefix' => '<div class="pull-left">',
+      '#suffix' => '</div>',
+    );
+    
+    $element['fieldset_container']['remove'][$uniqId] = array(
+      '#type' => 'submit',
+      '#value' => 'Remove',
+      '#name' => $uniqId,
+      '#attributes'=> array('style'=> array('font-family:FontAwesome;'),'class'=>array('alert-container-section', 'workflow-remove-submit')),
+      '#parents' => array('postedData', $uniqId, 'remove'),      
+      '#submit'=> array('remove_asset_category_handler'),
+      '#ajax' => array(
+        'callback' => 'asset_category_row_callback_for_remove',
+        'wrapper' => 'asset-container-section',
+        'method' => 'replace',
+        'effect' => 'fade',
+        'progress' => array('type'=> 'throbber', 'message'=> NULL),
+      ),    
+    );
+    
+    if(isset($form_state['form_example_form_subject_value'][$uniqId])) {
+      $stdefault = $form_state['form_example_form_subject_value'][$uniqId];
+      $element['fieldset_container']['test_name'][$uniqId]['#default_value'] = $stdefault;
+    }
+    
+    //dpm($element['fieldset_container']);
+    // drupal_set_message(print_r($form_state['form_example_form_subject_value'],1));
+  }
+
+  $element['workflow_add_new_row'] = array(
+    '#type' => 'submit',
+    '#value' => 'Add New Subject',
+    '#name' => 'workflow_add_new_row',
+    '#attributes'=> array('class'=>array('routing-workflow-action','assets-workflow-action-add-new-assets'),'title'=>'Add New Detail'),
+    '#submit'=> array('custom_multiple_subject_add_submit_callback'),
+    '#ajax' => array(
+      'callback' => 'custom_multiple_subject_add_ajax_callback',
+      'wrapper' => 'asset-container-section',
+      'method' => 'replace',
+      'effect' => 'fade',
+      'progress' => array('type'=> 'throbber', 'message'=> NULL),
+    ),
+    '#prefix' => '<div class="table-footer-custom clearfix margin-bottom-10">',
+    '#suffix' => '</div>',
+  );
+
+  return $element;
+}
+
+function custom_multiple_subject_add_submit_callback($form, &$form_state) {
+
+  $triggerElement = $form_state['triggering_element'];
+  $tempIdentifer = uniqid();
+  $form_state['asset_cat_first_storage'][]  = $tempIdentifer;    
+  $form_state['rebuild'] = TRUE;
+}
+
+function custom_multiple_subject_add_ajax_callback(&$form, &$form_state) {  
+  return $form['main-container-multi'];
+}
+
+function asset_category_row_callback_for_remove(&$form, &$form_state) {
+  return $form['main-container-multi'];
 }
 
 function form_example_form_validate($form, &$form_state) {
@@ -576,7 +792,7 @@ function form_example_form_submit($form, &$form_state) {
 
   global $user;
 
-  if(!isset($form_state['values']['hidden_nid'])){
+  // if(!isset($form_state['values']['hidden_nid'])){
     // add node properties
     $newNode = (object) NULL;
     $newNode->type = 'newsletter';
@@ -592,6 +808,12 @@ function form_example_form_submit($form, &$form_state) {
     for($i=0; $i< $image_file_count; $i++){
       $newNode->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
     }
+
+    $subjects = $form_state['values']['postedData'];
+
+    foreach( $subjects as $subject => $val ) {
+      $newNode->field_subject['und'][]['value'] = $val['test_name'];   
+    }  
 
     $year = $form_state['values']['date_field']['year'] ;
     $month = $form_state['values']['date_field']['month'] ;
@@ -611,51 +833,57 @@ function form_example_form_submit($form, &$form_state) {
     
     // exit;
     node_save($newNode);
-    drupal_set_message('My Node No :'.$newNode->nid);
+    // drupal_set_message('My Node No :'.$newNode->nid);
+
+    $tempIdentifer = uniqid();
+    $form_state['input'] = array();
+    $form_state['asset_cat_first_storage'] = array();
+    $form_state['asset_cat_first_storage'][] = $tempIdentifer;
+    $form_state['rebuild'] = TRUE;
     
-  }else{
-    $node = [];
-    $node = node_load($form_state['values']['hidden_nid']);
-    // add node properties
-    $node->title = $form_state['values']['title'];
-    $node->body['und']['0'] = $form_state['values']['description'];
+  // }else{
+  //   $node = [];
+  //   $node = node_load($form_state['values']['hidden_nid']);
+  //   // add node properties
+  //   $node->title = $form_state['values']['title'];
+  //   $node->body['und']['0'] = $form_state['values']['description'];
 
-    $node->field_boolean_on_off_check_box_['und']['0']['value'] = $form_state['values']['copy'];
-    $node->field_list_integer_['und']['0']['value'] = $form_state['values']['active2'];
+  //   $node->field_boolean_on_off_check_box_['und']['0']['value'] = $form_state['values']['copy'];
+  //   $node->field_list_integer_['und']['0']['value'] = $form_state['values']['active2'];
     
-    $year = $form_state['values']['date_field']['year'] ;
-    $month = $form_state['values']['date_field']['month'] ;
-    $day = $form_state['values']['date_field']['day'] ;
-    $currentDate = $day."-".$month."-".$year ;
-    $node->field_date_iso_format_testing['und']['0']['value'] = $currentDate ;
+  //   $year = $form_state['values']['date_field']['year'] ;
+  //   $month = $form_state['values']['date_field']['month'] ;
+  //   $day = $form_state['values']['date_field']['day'] ;
+  //   $currentDate = $day."-".$month."-".$year ;
+  //   $node->field_date_iso_format_testing['und']['0']['value'] = $currentDate ;
 
-    $image_file_count = count($form_state['values']['file']);
+  //   $image_file_count = count($form_state['values']['file']);
 
-    for($i=0; $i< $image_file_count; $i++){
-      $node->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
-    }
+  //   for($i=0; $i< $image_file_count; $i++){
+  //     $node->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
+  //   }
 
-    node_save($node);
-    drupal_set_message('My Edited Node No :'.$node->nid);
+  //   node_save($node);
+  //   drupal_set_message('My Edited Node No :'.$node->nid);
   
-    // $tableArray = array(
-    //   'Category Table' => 'id
-    //                       cat_name
-    //                       cat_descr
-    //                       parent_cat_id', 
+  //   // $tableArray = array(
+  //   //   'Category Table' => 'id
+  //   //                       cat_name
+  //   //                       cat_descr
+  //   //                       parent_cat_id', 
       
-    //   'Product Table' => 'id
-    //                       cat_id
-    //                       prod_name
-    //                       prod_descr
-    //                       prod_price
-    //                       currency_id
-    //                       ',
+  //   //   'Product Table' => 'id
+  //   //                       cat_id
+  //   //                       prod_name
+  //   //                       prod_descr
+  //   //                       prod_price
+  //   //                       currency_id
+  //   //                       ',
 
-    //   'Currency Table' => 'id
-    //                       curr_name
-    //                       curr_value', 
-    //   '' => '', 
-    // );
-  }
+  //   //   'Currency Table' => 'id
+  //   //                       curr_name
+  //   //                       curr_value', 
+  //   //   '' => '', 
+  //   // );
+  // }
 }
