@@ -32,83 +32,6 @@ function _get_rendering_element() {
   return $elements;
 }
 
-function _get_form_posted_data() {
-  $rows = array();
-  $header = array(
-    array('data'=>'Sr. No'),
-    array('data'=>'Title'),
-    array('data'=>'Photo'),
-    array('data'=>'Edit Link'),
-    array('data'=>'Delete Link'),
-  );  
-  
-  $i = 1;
-
-  $query = db_select('node','n');
-  $query->fields('n');
-  $query->condition('n.type','newsletter');
-
-  $result = $query->execute()->fetchAll() ;
-
-  $getNodeIds = array();
-  foreach ($result as $res_arr) {
-      $getNodeIds[] = $res_arr->nid;
-  }
-
-  foreach($getNodeIds as $delta => $nids) {
-    $loadNodeData = node_load($nids);
-
-    $delete_link =  '/mycontent/' . $nids .'/delete_slot';
-    
-    $edit_link =  '/mycontent/' . $nids .'/edit_slot';
-    // $edit_link =  '/node-edit/' . $nids .'/edit_slot';
-
-    if(isset($loadNodeData->field_image_testing['und']['0']['uri']))
-      $img_url = file_create_url($loadNodeData->field_image_testing['und']['0']['uri']);
-    else
-      $img_url = "http://no_image";
-
-    $rows[] = array(
-      'data' => array(  
-        array('data'=>$i),    
-        array('data'=>$loadNodeData->title,'class'=> array('text-left')),        
-        array('data'=>'<img src="'.$img_url.'" alt="photo" style="width:100px;height:125px">','class'=> array('text-left')),        
-        array('data'=>l(t('Edit'),$edit_link, 
-          array('attributes' => array
-            (
-              // 'target' => '_blank'
-              'onclick' => 'if(!confirm("Really Edit?")){
-                return false;
-              }'
-            ),
-            // 'ajax' => array(
-              // 'callback' => '_print_hello ',
-              // 'wrapper' => 'channel_container_' . $channel->nid
-            // )
-          )
-        )),        
-        array('data'=>l(t('Delete'),$delete_link, 
-          array('attributes' => array(
-            'onclick' => 'if(!confirm("Really Delete?")){
-              return false;
-            }'
-            ),
-            'ajax' => array(
-                'callback' => 'form_example_delete_node',
-                'arguments' => $nids
-              )
-          )
-        )),        
-      ),  
-    );
-    
-    $i++;
-  }
-
-  return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
-}
-
-
 function form_example_form($form, &$form_state, $no_js = NULL){
 
   if(empty($form_state['asset_cat_first_storage'])) {
@@ -120,7 +43,7 @@ function form_example_form($form, &$form_state, $no_js = NULL){
     $form_state['form_example_form_subject_value'] = array();   
   }
 
-  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'node-list' ) {    
+  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'nod-list' ) {    
     $triggeringElement = $form_state['triggering_element'];    
     $edit_id = $triggeringElement['#value'];      
     $edit_node = node_load($edit_id);  
@@ -190,48 +113,8 @@ function form_example_form($form, &$form_state, $no_js = NULL){
 
 }
 
-function form_example_save_newsletter_data($form, &$form_state) {
-    $tempIdentifer = uniqid();
-    $form_state['asset_cat_first_storage'] = array();
-    $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
-    $commands = array();    
-    $commands[] = ajax_command_invoke('#edit-title', 'val', array(''));
-    $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
-    $commands[] = ajax_command_invoke('#edit-description-value', 'val', array(''));
-
-    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
-    $commands[] = ajax_command_html('#main-container-multi-replace', render($form['main-container-multi']));
-    return array('#type' => 'ajax', '#commands' => $commands); 
-}
-
 // function form_example_form_process($form, &$form_state) {
 function form_example_form_process($element, &$form_state) {
-  
-  $element['full-container']= array(
-    '#type' => 'container',
-    '#attributes' => array('class'=>array('col-md-12','col-sm-12','col-xs-12','project-details-left'),),
-  );
-  // $query = db_select('node', 'n');
-  // $query->join('field_data_field_contact_name', 'na', 'n.nid = na.entity_id');  
-  // $query->fields('n',array('nid'));
-  // $query->fields('na',array('field_contact_name_value'));
-  // $result = $query->execute();
-  // $contact_list = array('' => 'None'); 
-  //   while($row = $result->fetchAssoc()) {
-  //      $contact_list[ $row['nid'] ]= $row['field_contact_name_value']; 
-  //   }      
-  // $element['full-container']['node-list'] = array(
-  //   '#type' => 'select',
-  //   '#title' => t('Selected'),
-  //   '#options' =>$contact_list, 
-  //   '#prefix' =>'<div style="display:none;">',
-  //   '#suffix' =>'</div>',
-  //   '#ajax' => array( 
-  //     'callback' => 'custom_contact_edit_form_callback',  
-  //     'wrapper' => 'project_test_data_container',  
-  //   ),
-  //   '#attributes' => array('class'=> array('edit-custom-node-select')),
-  // );
   
   /**---------------*/
   // if(isset($_GET['n_id'])){
@@ -253,6 +136,40 @@ function form_example_form_process($element, &$form_state) {
   // drupal_goto('test', array('query'=>array('variable_name1'=>'variable_value1)));
   
   // $form['#id'] = 'form_example';
+
+  $element['full-container']= array(
+    '#type' => 'container',
+    '#attributes' => array('class'=>array('col-md-12','col-sm-12','col-xs-12','project-details-left'),),
+  );
+  
+  $query = db_select('node', 'n');
+  // $query->join('field_data_field_title', 'na', 'n.nid = na.entity_id');  
+  $query->fields('n',array('nid','title'));
+  // $query->condition('n.nid',' ','!=');
+  $query->condition('n.type','newsletter');
+  // $query->fields('na',array('field_title_value'));
+  $result = $query->execute();
+  $subject_list = array('' => 'None');
+    while($row = $result->fetchAssoc()) {
+       $subject_list[ $row['nid'] ]= $row['title']; 
+    }      
+  // print "<pre>";
+  // print_r($subject_list);
+  // exit; 
+  
+  $element['full-container']['nod-list'] = array(
+    '#type' => 'select',
+    '#title' => t('Selected'),
+    '#options' =>$subject_list, 
+    '#prefix' =>'<div style="display:none;">',
+    '#suffix' =>'</div>',
+    '#ajax' => array( 
+      'callback' => 'form_example_edit_form_callback',  
+      'wrapper' => 'project_test_data_container',  
+    ),
+    '#attributes' => array('class'=> array('edit-custom-node-select')),
+    // '#attributes' => array('class'=> array('edit-custom-node-select form-select ajax-processed')),
+  );
   
   $element['full-container']['hidden_nid'] = array(
     '#type' => 'hidden', 
@@ -490,6 +407,7 @@ function form_example_form_process($element, &$form_state) {
     // '#default_value' => isset($nodeData->field_list_integer_['und']['0']['value']) ? $nodeData->field_list_integer_['und']['0']['value'] : 1,
     // '#default_value' => $node->active,
     '#options' => $active2,
+    '#attributes' => array('class' => array('form-custom-radio')),
     '#description' => t('When a poll is closed, visitors can no longer vote for it.'),
     // '#access' => $admin,
   );
@@ -668,7 +586,6 @@ function form_example_form_process($element, &$form_state) {
 
 // function form_example_multiple_subject_process($element,&$form_state) {
 function form_example_multiple_subject_process($element, &$form_state) {
-  
 
   $storage = $form_state['asset_cat_first_storage'];
 
@@ -696,7 +613,7 @@ function form_example_multiple_subject_process($element, &$form_state) {
       '#name' => $uniqId,
       '#attributes'=> array('style'=> array('font-family:FontAwesome;'),'class'=>array('alert-container-section', 'workflow-remove-submit')),
       '#parents' => array('postedData', $uniqId, 'remove'),      
-      '#submit'=> array('remove_asset_category_handler'),
+      '#submit'=> array('remove_subject_asset_category_handler'),
       '#ajax' => array(
         'callback' => 'asset_category_row_callback_for_remove',
         'wrapper' => 'asset-container-section',
@@ -747,10 +664,25 @@ function custom_multiple_subject_add_ajax_callback(&$form, &$form_state) {
   return $form['main-container-multi'];
 }
 
+// function remove_asset_category_handler(&$form,&$form_state) {
+function remove_subject_asset_category_handler(&$form,&$form_state) {
+  $triggering_element = $form_state['triggering_element'];
+
+  $identifier = $triggering_element['#parents'][1];
+  if(isset($form_state['asset_cat_first_storage'])){
+    foreach ($form_state['asset_cat_first_storage'] as $key => $value) {
+      if($form_state['asset_cat_first_storage'][$key] == $identifier){
+        unset($form_state['asset_cat_first_storage'][$key]);
+        unset($form_state['form_example_form_subject_value'][$identifier]);
+      } 
+    }             
+  }   
+  $form_state['rebuild'] = TRUE;
+}
+
 function asset_category_row_callback_for_remove(&$form, &$form_state) {
   return $form['main-container-multi'];
 }
-
 function form_example_form_validate($form, &$form_state) {
   
   $num_files = count($_FILES['files']['name']);
@@ -787,9 +719,7 @@ function cvf_convert_object_to_array($data) {
     }
 }
 
-
 function form_example_form_submit($form, &$form_state) {
-
   global $user;
 
   // if(!isset($form_state['values']['hidden_nid'])){
@@ -887,3 +817,137 @@ function form_example_form_submit($form, &$form_state) {
   //   // );
   // }
 }
+
+function form_example_save_newsletter_data($form, &$form_state) {
+    $tempIdentifer = uniqid();
+    $form_state['asset_cat_first_storage'] = array();
+    $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
+    $commands = array();    
+    $commands[] = ajax_command_invoke('#edit-title', 'val', array(''));
+    $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
+    $commands[] = ajax_command_invoke('#edit-description-value', 'val', array(''));
+
+    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+    $commands[] = ajax_command_html('#main-container-multi-replace', render($form['main-container-multi']));
+    return array('#type' => 'ajax', '#commands' => $commands); 
+}
+
+function form_example_edit_form_callback($form, $form_state) {
+  
+  $triggeringElement = $form_state['triggering_element'];
+
+  $form_state['form_example_subject_storage'] = array();
+  
+  $form_state['form_example_form_subject_value'] = array();
+  
+  $commands = array();
+  
+  if($form_state['triggering_element']['#type']=='select' && $form_state['triggering_element']['#name']=='nod-list' ) { 
+    
+
+    $edit_id = $triggeringElement['#value'];  
+    $edit_node = node_load($edit_id);   
+
+    // print "<pre>";
+    // print_r($edit_node);
+    // exit;
+    $commands[] = ajax_command_invoke('#edit-nodeId', 'val', array($edit_id));
+    $commands[] = ajax_command_invoke('#edit-title', 'val', array($edit_node->title));
+    $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
+    $commands[] = ajax_command_invoke('#edit-description-value', 'val', array($edit_node->body['und'][0]['value']));
+
+    
+    // $commands[] = ajax_command_invoke('.vehicle_radios input[type="checkbox"]', 'attr',array('checked', 'true'));
+    // $commands[] = ajax_command_invoke('.operation-done input[value="'.$item1['value'].'"]', 'attr',array('checked', 'true'));
+
+    $radio = $edit_node->field_list_integer_;
+    $v = $radio['und'][0]['value'];
+
+    $commands[] = ajax_command_invoke('.form-custom-radio input[value="'.$v.'"]', 'attr',array('checked', 'true'));
+
+    
+    $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
+
+    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+  
+  }  
+  return array('#type' => 'ajax', '#commands' => $commands);
+
+}
+
+function _get_form_posted_data() {
+  
+  drupal_add_js( drupal_get_path('module', 'form_example') . '/js/form_alter.js');
+
+  $rows = array();
+  $header = array(
+    array('data'=>'Sr. No'),
+    array('data'=>'Title'),
+    array('data'=>'Photo'),
+    array('data'=>'Edit Link'),
+    array('data'=>'Delete Link'),
+  );  
+  
+  $i = 1;
+
+  $query = db_select('node','n');
+  $query->fields('n');
+  $query->condition('n.type','newsletter');
+
+  $result = $query->execute()->fetchAll() ;
+
+  $getNodeIds = array();
+  foreach ($result as $res_arr) {
+      $getNodeIds[] = $res_arr->nid;
+  }
+
+  foreach($getNodeIds as $delta => $nids) {
+    $loadNodeData = node_load($nids);
+
+    $delete_link =  '/mycontent/' . $nids .'/delete_slot';
+    
+    // $edit_link =  '/mycontent/' . $nids .'/edit_slot';
+
+    $edit_link = l('Edit', 'javascript:void(0)', array('attributes' => array('class' => array('edit-form-detail'),'data-value' => $nids )));
+    
+    if(isset($loadNodeData->field_image_testing['und']['0']['uri']))
+      $img_url = file_create_url($loadNodeData->field_image_testing['und']['0']['uri']);
+    else
+      $img_url = "http://no_image";
+
+
+    $rows[] = array(
+      'data' => array(  
+        array('data'=>$i),    
+        array('data'=>$loadNodeData->title,'class'=> array('text-left')),        
+        array('data'=>'<img src="'.$img_url.'" alt="photo" style="width:100px;height:125px">','class'=> array('text-left')),      
+        array('data'=>$edit_link),        
+              // 'target' => '_blank'
+              // 'onclick' => 'if(!confirm("Really Edit?")){
+              //   return false;
+              // }'
+            // 'ajax' => array(
+              // 'callback' => '_print_hello ',
+              // 'wrapper' => 'channel_container_' . $channel->nid
+            // )
+        array('data'=>l(t('Delete'),$delete_link, 
+          array('attributes' => array(
+            'onclick' => 'if(!confirm("Really Delete?")){
+              return false;
+            }'
+            ),
+            'ajax' => array(
+                'callback' => 'form_example_delete_node',
+                'arguments' => $nids
+              )
+          )
+        )),        
+      ),  
+    );
+    
+    $i++;
+  }
+
+  return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
+}
+
