@@ -50,7 +50,7 @@ function form_example_form($form, &$form_state, $no_js = NULL){
     $form_state['asset_cat_first_storage'] = array();
     $form_state['form_example_form_subject_value'] = array();
     
-    $subject = $edit_node->field_subject;
+    $subjects = $edit_node->field_subject;
          
     foreach($subjects['und'] as $subject => $val) { 
         
@@ -586,7 +586,6 @@ function form_example_form_process($element, &$form_state) {
 
 // function form_example_multiple_subject_process($element,&$form_state) {
 function form_example_multiple_subject_process($element, &$form_state) {
-
   $storage = $form_state['asset_cat_first_storage'];
 
   $element['#storage'] = $storage;
@@ -720,9 +719,71 @@ function cvf_convert_object_to_array($data) {
 }
 
 function form_example_form_submit($form, &$form_state) {
+
+  $node_id = $form_state['values']['edit-nodeId'];
   global $user;
 
   // if(!isset($form_state['values']['hidden_nid'])){
+  if(!empty($node_id)){
+
+    $node = [];
+    $node = node_load($node_id);
+    // add node properties
+    $node->title = $form_state['values']['title'];
+    $node->body['und']['0'] = $form_state['values']['description'];
+
+    $node->field_boolean_on_off_check_box_['und']['0']['value'] = $form_state['values']['copy'];
+    $node->field_list_integer_['und']['0']['value'] = $form_state['values']['active2'];
+
+    // $image_file_count = count($form_state['values']['file']);
+
+    // for($i=0; $i< $image_file_count; $i++){
+    //   $newNode->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
+    // }
+
+    $subjects = $form_state['values']['postedData'];
+
+    $count = count($node->field_subject['und']);
+
+    $i = 0;
+    foreach( $subjects as $subject => $val ) {
+
+      if($i < $count)
+        $node->field_subject['und'][$i]['value'] = $val['test_name'];
+      else   
+        $node->field_subject['und'][]['value'] = $val['test_name'];   
+        
+      $i++;
+    }
+    
+    $year = $form_state['values']['date_field']['year'] ;
+    $month = $form_state['values']['date_field']['month'] ;
+    $day = $form_state['values']['date_field']['day'] ;
+    $currentDate = $day."-".$month."-".$year ;
+    $node->field_date_iso_format_testing['und']['0']['value'] = $currentDate ;
+
+    $image_file_count = count($form_state['values']['file']);
+
+    for($i=0; $i< $image_file_count; $i++){
+      $node->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
+    }
+
+    node_save($node);
+    drupal_set_message('My Edited Node No :'.$node->nid);
+
+
+    $form['#attached']['js'] = array(
+       drupal_get_path('module', 'form_example') . '/js/form_alter.js',
+    );
+
+    $tempIdentifer = uniqid();
+    $form_state['input'] = array();
+    $form_state['asset_cat_first_storage'] = array();
+    $form_state['asset_cat_first_storage'][] = $tempIdentifer;
+    $form_state['rebuild'] = TRUE;
+
+  }else{
+
     // add node properties
     $newNode = (object) NULL;
     $newNode->type = 'newsletter';
@@ -770,31 +831,7 @@ function form_example_form_submit($form, &$form_state) {
     $form_state['asset_cat_first_storage'] = array();
     $form_state['asset_cat_first_storage'][] = $tempIdentifer;
     $form_state['rebuild'] = TRUE;
-    
-  // }else{
-  //   $node = [];
-  //   $node = node_load($form_state['values']['hidden_nid']);
-  //   // add node properties
-  //   $node->title = $form_state['values']['title'];
-  //   $node->body['und']['0'] = $form_state['values']['description'];
-
-  //   $node->field_boolean_on_off_check_box_['und']['0']['value'] = $form_state['values']['copy'];
-  //   $node->field_list_integer_['und']['0']['value'] = $form_state['values']['active2'];
-    
-  //   $year = $form_state['values']['date_field']['year'] ;
-  //   $month = $form_state['values']['date_field']['month'] ;
-  //   $day = $form_state['values']['date_field']['day'] ;
-  //   $currentDate = $day."-".$month."-".$year ;
-  //   $node->field_date_iso_format_testing['und']['0']['value'] = $currentDate ;
-
-  //   $image_file_count = count($form_state['values']['file']);
-
-  //   for($i=0; $i< $image_file_count; $i++){
-  //     $node->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
-  //   }
-
-  //   node_save($node);
-  //   drupal_set_message('My Edited Node No :'.$node->nid);
+  }
   
   //   // $tableArray = array(
   //   //   'Category Table' => 'id
@@ -842,37 +879,47 @@ function form_example_edit_form_callback($form, $form_state) {
   
   $commands = array();
   
-  if($form_state['triggering_element']['#type']=='select' && $form_state['triggering_element']['#name']=='nod-list' ) { 
-    
+  if($form_state['triggering_element']['#type']=='select' && $form_state['triggering_element']['#name']=='nod-list' ) {
 
     $edit_id = $triggeringElement['#value'];  
     $edit_node = node_load($edit_id);   
 
-    // print "<pre>";
-    // print_r($edit_node);
-    // exit;
     $commands[] = ajax_command_invoke('#edit-nodeId', 'val', array($edit_id));
     $commands[] = ajax_command_invoke('#edit-title', 'val', array($edit_node->title));
     $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
     $commands[] = ajax_command_invoke('#edit-description-value', 'val', array($edit_node->body['und'][0]['value']));
 
-    
-    // $commands[] = ajax_command_invoke('.vehicle_radios input[type="checkbox"]', 'attr',array('checked', 'true'));
-    // $commands[] = ajax_command_invoke('.operation-done input[value="'.$item1['value'].'"]', 'attr',array('checked', 'true'));
-
     $radio = $edit_node->field_list_integer_;
     $v = $radio['und'][0]['value'];
 
+    // $commands[] = ajax_command_invoke('.vehicle_radios input[type="checkbox"]', 'attr',array('checked', 'true'));
+    // $commands[] = ajax_command_invoke('.operation-done input[value="'.$item1['value'].'"]', 'attr',array('checked', 'true'));
     $commands[] = ajax_command_invoke('.form-custom-radio input[value="'.$v.'"]', 'attr',array('checked', 'true'));
-
     
     $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
+    // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
 
     $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
   
   }  
+    // print "<pre>";
+    // print_r($commands);
+    // exit; 
+
   return array('#type' => 'ajax', '#commands' => $commands);
 
+}
+
+function form_example_delete_callback($node_id, $no_js = NULL) {
+  ctools_include('ajax');
+  $commands = array();
+  node_delete($node_id);  
+  $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+  // return array('#type' => 'ajax', '#commands' => $commands);
+  print ajax_render($commands); // this function exits.
+  exit;
+  /*We can use both exit or return bcoz after rendring of html and echo of it, function should to be halt and return some value*/
+  // return;
 }
 
 function _get_form_posted_data() {
@@ -904,11 +951,30 @@ function _get_form_posted_data() {
   foreach($getNodeIds as $delta => $nids) {
     $loadNodeData = node_load($nids);
 
-    $delete_link =  '/mycontent/' . $nids .'/delete_slot';
-    
+    // $delete_link =  '/mycontent/' . $nids .'/delete_slot';
     // $edit_link =  '/mycontent/' . $nids .'/edit_slot';
-
-    $edit_link = l('Edit', 'javascript:void(0)', array('attributes' => array('class' => array('edit-form-detail'),'data-value' => $nids )));
+    
+    $delete_link = l('Delete', 
+                    url('node-delete/' . $nids.'/nojs'), 
+                    array( 
+                      'external'=>TRUE, 
+                      'attributes'=> array(
+                        'class'=>array('node-detail-delete','use-ajax')
+                        )
+                      )
+                    );
+    
+    $edit_link = l('Edit', 
+                  'javascript:void(0)', 
+                  array(
+                    'attributes' => array(
+                      'class' => array(
+                        'edit-form-detail'
+                        ),
+                      'data-value' => $nids 
+                      )
+                    )
+                  );
     
     if(isset($loadNodeData->field_image_testing['und']['0']['uri']))
       $img_url = file_create_url($loadNodeData->field_image_testing['und']['0']['uri']);
@@ -930,18 +996,19 @@ function _get_form_posted_data() {
               // 'callback' => '_print_hello ',
               // 'wrapper' => 'channel_container_' . $channel->nid
             // )
-        array('data'=>l(t('Delete'),$delete_link, 
-          array('attributes' => array(
-            'onclick' => 'if(!confirm("Really Delete?")){
-              return false;
-            }'
-            ),
-            'ajax' => array(
-                'callback' => 'form_example_delete_node',
-                'arguments' => $nids
-              )
-          )
-        )),        
+        array('data'=>$delete_link),
+          // array('attributes' => array(
+          //     'onclick' => 'if(!confirm("Really Delete?")){
+          //       return false;
+          //     }'
+          //     ),
+          //     'ajax' => array(
+          //         'callback' => 'form_example_delete_node',
+          //         'arguments' => $nids
+          //       )
+          //   )
+          // )
+                  
       ),  
     );
     

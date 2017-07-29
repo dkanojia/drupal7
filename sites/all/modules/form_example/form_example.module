@@ -17,6 +17,14 @@ function form_example_menu() {
     'access arguments' => array('administer my module'), // whatever see above
   );
 
+  $items['node-delete/%/%ctools_js'] = array(
+    'file' => 'form_example_inc.inc',
+    'page callback' => 'form_example_delete_callback', //The name of the function that will output a page
+    'page arguments' => array(1,2),
+    'access callback' => TRUE,
+    //'type' => MENU_CALLBACK,
+  );
+
   $items['examples/%node/form-json'] = array( //this creates a URL that will call this form at "examples/form-example"
     'title' => 'Apis Example Form', //page title
     'description' => 'An api of node detail.',
