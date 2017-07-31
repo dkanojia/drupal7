@@ -71,6 +71,14 @@ function form_example_form($form, &$form_state, $no_js = NULL){
     '#process' => array('form_example_form_process'), 
   );
 
+  // $form['image-container'] = array(
+  //   '#type' => 'container',
+  //   '#attributes' => array('class' => array('row')),
+  //   '#prefix' => '<div class="clearfix margin-bottom-10"><div id="image_container_section" class="project-detail project_test_data_container">', 
+  //   '#suffix' => '</div></div>',
+  //   '#process' => array('form_example_image_form'),
+  //   );
+
   $form['container-prefix'] = array(
     '#markup' => '<div id="main-container-multi-replace">',
   );
@@ -345,12 +353,31 @@ function form_example_form_process($element, &$form_state) {
     '#empty' => t('No users found'),
   );  
 
+  $edit_id = '';
+
+  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'nod-list' ) {    
+    $triggeringElement = $form_state['triggering_element'];    
+
+    if(isset($triggeringElement['#value']))
+      $edit_id = $triggeringElement['#value'];
+    else
+      $edit_id = NULL;      
+  }
+
+  $element['full-container']['get_image_table'] = array(
+    '#markup' => _get_image_table_data($edit_id),
+    '#prefix' => '<div class="image_main_container"> <div class="image-listing" id="form-example-image-listing">',
+    '#suffix' => '</div></div>'
+  );
+
   $element['full-container']['file'] = array(
     '#type' => 'file',
     '#name' => 'files[]',
     '#title' => t('Choose multi file (Testing of file field)'),
     '#attributes' => array('multiple' => 'multiple'),
   );
+
+
 
   $element['full-container']['machine_name'] = array(
     '#type' => 'machine_name',
@@ -685,23 +712,23 @@ function asset_category_row_callback_for_remove(&$form, &$form_state) {
 function form_example_form_validate($form, &$form_state) {
   
   $num_files = count($_FILES['files']['name']);
-    for ($i = 0; $i < $num_files; $i++) {
-      $file = file_save_upload($i, array(
-        'file_validate_is_image' => array(),
-        'file_validate_extensions' => array('png gif jpg jpeg'),
-      ));
+  for ($i = 0; $i < $num_files; $i++) {
+    $file = file_save_upload($i, array(
+      'file_validate_is_image' => array(),
+      'file_validate_extensions' => array('png gif jpg jpeg'),
+    ));
 
-      if ($file) {
-        if ($file = file_move($file, 'public://image_example_images/')) {
-          $form_state['values']['file'][$i] = $file;
-        } else {
-          form_set_error('file', t('Failed to write the uploaded file the site\'s file folder.'));
-        }
+    if ($file) {
+      if ($file = file_move($file, 'public://image_example_images/')) {
+        $form_state['values']['file'][$i] = $file;
       } else {
-        form_set_error('file', t('No file was uploaded.'));
+        form_set_error('file', t('Failed to write the uploaded file the site\'s file folder.'));
       }
+    } else {
+      form_set_error('file', t('No file was uploaded.'));
     }
   }
+}
 
 //stdClass Object Converting to arrray;
 function cvf_convert_object_to_array($data) {
@@ -852,7 +879,6 @@ function form_example_form_submit($form, &$form_state) {
   //   //                       curr_value', 
   //   //   '' => '', 
   //   // );
-  // }
 }
 
 function form_example_save_newsletter_data($form, &$form_state) {
@@ -900,7 +926,7 @@ function form_example_edit_form_callback($form, $form_state) {
     // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
 
     $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
-  
+    $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($edit_id));
   }  
     // print "<pre>";
     // print_r($commands);
@@ -922,8 +948,183 @@ function form_example_delete_callback($node_id, $no_js = NULL) {
   // return;
 }
 
-function _get_form_posted_data() {
+
+// function form_example_image_form(){
+// function form_example_image_form($element, &$form_state){
+
+
+//   $element['get_image_table'] = array(
+//     '#markup' => _get_image_table_data(),
+//     '#prefix' => '<div class="image_main_container"> <div class="image-listing" id="form-example-image-listing">',
+//     '#suffix' => '</div></div>'
+//   );
+
+//   return $element;
   
+// }
+
+function _get_image_table_data($edit_id){
+  if(!($edit_id == NULL)){
+    drupal_add_js( drupal_get_path('module', 'form_example') . '/js/form_alter.js');
+
+    $rows = array();
+    $header = array(
+      array('data'=>'Sr. No'),
+      array('data'=>'File Detail'),
+      array('data'=>'Remove Link'),
+    );  
+    // $edit_id = 103;
+    // $nodeData = node_load(103);
+
+    $nodeData = node_load($edit_id);
+    $nid = $nodeData->nid;
+
+    $image_arr = $nodeData->field_image_testing['und'];
+
+    $i = 1;
+    foreach ($image_arr as $key => $imag_uri_value) {
+
+      
+      $img_url = file_create_url($imag_uri_value['uri']);
+      $img_name = $imag_uri_value['filename'];
+      $img_id = $imag_uri_value['fid'];
+      
+      $remove_link = l('Remove', 
+                      url('image-delete/' . $img_id.'/'. $nid .'/nojs'), 
+                      array( 
+                        'external'=>TRUE, 
+                        'attributes'=> array(
+                          'class'=>array('image-detail-delete','use-ajax')
+                          )
+                        )
+                      );
+
+      $rows[] = array(
+        'data' => array(  
+          array('data'=>$i),    
+          array('data'=>'<div> <img src="'.$img_url.'" alt="photo" style="width:65px;height:65px"> </div> 
+                        <div>'. $img_name .'</div>','class'=> array('text-left')),      
+          array('data'=>$remove_link),
+        ),  
+      );
+      
+      $i++;
+
+    }
+    return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
+  }else{
+    return ;
+  }
+
+}
+
+function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
+  ctools_include('ajax');
+  $commands = array();
+
+  $file = file_load($file_id);
+  $node = node_load($node_id);
+  $f_id = $file->fid;
+
+  $img_arr = $node->field_image_testing;
+
+  $und_inc = 0;
+  
+  // Update field_image_testing table.
+  foreach ($img_arr['und'] as $key => $value) {
+    
+    if($value[$und_inc]['fid'] == $f_id){
+      $file_delete_query = db_delete('field_data_field_image_testing')
+            ->condition('entity_id', $node_id)
+            ->condition('field_image_testing_fid', $value[$und_inc]['fid']);
+
+      $file_delete_query->execute();
+
+
+      // $update_query = db_update('field_data_field_image_testing')
+      //       ->fields(array('delta' => $und_inc))
+      //       ->condition('entity_id', $node_id)
+      //       ->condition('field_image_testing_fid', $value[$und_inc]['fid']);
+          
+      // $update_query->execute()
+    }else{
+      $update_query = db_update('field_data_field_image_testing')
+            ->fields(array('delta' => $und_inc))
+            ->condition('entity_id', $node_id)
+            ->condition('field_image_testing_fid', $value[$und_inc]['fid']);
+          
+      $update_query->execute();
+    }
+
+    $und_inc++;
+  }
+
+  $count = 1;
+
+  // Delete rows that have a exact or less value to prevent empty rows.
+  $file_del_query = db_delete('file_usage')
+    ->condition('fid', $f_id)
+    ->condition('id', $node_id);
+  
+  if ($count) {
+    $file_del_query->condition('count', $count, '<=');
+  }
+
+  $file_del_query->execute();
+
+  file_delete($file);
+
+  // If the row has more than the specified count decrement it by that number.
+  // if (!$result && $count > 0) {
+  //   $query = db_update('file_usage')
+  //     ->condition('fid', $file->fid)
+  //     ->condition('id', $node_id);
+    
+  //   $query->expression('count', 'count - :count', array(':count' => $count));
+  //   $query->execute();
+  // }
+
+  $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($node_id));
+  // return array('#type' => 'ajax', '#commands' => $commands);
+  print ajax_render($commands); // this function exits.
+  exit;
+  // return;
+  /*We can use both exit or return bcoz after rendring of html and echo of it, function should to be halt and return some value*/
+  // return;
+}
+
+// function file_usage_delete(stdClass $file, $module, $type = NULL, $id = NULL, $count = 1) {
+//   // Delete rows that have a exact or less value to prevent empty rows.
+//   $query = db_delete('file_usage')
+//     ->condition('module', $module)
+//     ->condition('fid', $file->fid);
+//   if ($type && $id) {
+//     $query
+//     ->condition('type', $type)
+//       ->condition('id', $id);
+//   }
+//   if ($count) {
+//     $query->condition('count', $count, '<=');
+//   }
+//   $result = $query->execute();
+
+//   // If the row has more than the specified count decrement it by that number.
+//   if (!$result && $count > 0) {
+//     $query = db_update('file_usage')
+//       ->condition('module', $module)
+//       ->condition('fid', $file->fid);
+//     if ($type && $id) {
+//       $query
+//       ->condition('type', $type)
+//         ->condition('id', $id);
+//     }
+//     $query->expression('count', 'count - :count', array(':count' => $count));
+//     $query->execute();
+//   }
+// }
+
+function _get_form_posted_data() {
+
   drupal_add_js( drupal_get_path('module', 'form_example') . '/js/form_alter.js');
 
   $rows = array();
