@@ -64,7 +64,9 @@
 	                     'decimal' 		=> 'original_price',
 	                     'int' 			=> 'currency_id',
 	                     ),
+            		// Detail Table will be customized in future also
 
+            		
             		['Product Image Table'] => array(
 	                     
 	                     'data_type' 	=> 'field_name',
@@ -78,7 +80,7 @@
 	                     ),
             		),
 
-            		
+
 
 					['File Table'] => array(
 	                     
