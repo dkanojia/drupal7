@@ -1027,7 +1027,7 @@ function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
   $f_id = $file_id;
 
   $img_arr = $node->field_image_testing;
-
+  $und_inc = 0;
   // Extracting Position Of Image.
   foreach ($img_arr['und'] as $key => $value) {
 
