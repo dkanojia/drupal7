@@ -48,7 +48,6 @@
 	                     'varchar' 		=> 'sku',
 	                     'varchar' 		=> 'short_description',
 	                     'text' 		=> 'description',
-	                     'int' 			=> 'prod_cat_id',
 	                     'tinyInt' 		=> 'is_website_display',
 	                     'datetime' 	=> 'created_date',
 	                     'datetime' 	=> 'updated_date',
@@ -66,7 +65,7 @@
 	                     ),
             		// Detail Table will be customized in future also
 
-            		
+
             		['Product Image Table'] => array(
 	                     
 	                     'data_type' 	=> 'field_name',
@@ -180,7 +179,9 @@
 	                     'tinyInt' 		=> 'is_default_currency',
 	                     ),
             		),
-
+					
+					// It will be break into two table and 
+					// customize according type to manage enquiries
 					['Enquiry Form Table'] => array(
 	                     
 	                     'data_type' 	=> 'field_name',
