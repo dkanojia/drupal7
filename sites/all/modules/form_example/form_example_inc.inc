@@ -1019,58 +1019,65 @@ function _get_image_table_data($edit_id){
 }
 
 function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
+
   ctools_include('ajax');
   $commands = array();
 
-  $file = file_load($file_id);
   $node = node_load($node_id);
-  $f_id = $file->fid;
+  $f_id = $file_id;
 
   $img_arr = $node->field_image_testing;
 
-  $und_inc = 0;
-  
-  // Update field_image_testing table.
+  // Extracting Position Of Image.
   foreach ($img_arr['und'] as $key => $value) {
-    
-    if($value[$und_inc]['fid'] == $f_id){
-      $file_delete_query = db_delete('field_data_field_image_testing')
-            ->condition('entity_id', $node_id)
-            ->condition('field_image_testing_fid', $value[$und_inc]['fid']);
 
-      $file_delete_query->execute();
+    // Checking Position
+    if($value['fid'] == $f_id){
+      $pos_count = $und_inc;
 
-
-      // $update_query = db_update('field_data_field_image_testing')
-      //       ->fields(array('delta' => $und_inc))
+      // Deleting entry from table
+      // $file_delete_query = db_delete('field_data_field_image_testing')
       //       ->condition('entity_id', $node_id)
-      //       ->condition('field_image_testing_fid', $value[$und_inc]['fid']);
-          
-      // $update_query->execute()
-    }else{
-      $update_query = db_update('field_data_field_image_testing')
-            ->fields(array('delta' => $und_inc))
-            ->condition('entity_id', $node_id)
-            ->condition('field_image_testing_fid', $value[$und_inc]['fid']);
-          
-      $update_query->execute();
-    }
+      //       ->condition('field_image_testing_fid', $value['fid']);
+
+      // $file_delete_query->execute();
+
+      // if($und_inc > 0)
+      //   $und_inc--;
+    
+    }   
+
+    // Updating table for delta position
+    // $update_query = db_update('field_data_field_image_testing')
+    //       ->fields(array('delta' => $und_inc))
+    //       ->condition('entity_id', $node_id)
+    //       ->condition('field_image_testing_fid', $value['fid'])
+    //       ->condition('field_image_testing_fid', $f_id,'!=');
+        
+    // $update_query->execute();
+    
 
     $und_inc++;
   }
 
-  $count = 1;
+  // $count = 1;
 
-  // Delete rows that have a exact or less value to prevent empty rows.
-  $file_del_query = db_delete('file_usage')
-    ->condition('fid', $f_id)
-    ->condition('id', $node_id);
+  // // Delete rows that have a exact or less value to prevent empty rows.
+  // $file_del_query = db_delete('file_usage')
+  //   ->condition('fid', $f_id)
+  //   ->condition('id', $node_id);
   
-  if ($count) {
-    $file_del_query->condition('count', $count, '<=');
-  }
+  // if ($count) {
+  //   $file_del_query->condition('count', $count, '<=');
+  // }
 
-  $file_del_query->execute();
+  // $file_del_query->execute();
+
+
+  // Flle loding and deleting with node updaing file
+  $file = file_load($node->field_image_testing['und'][$pos_count]['fid']);
+  unset($node->field_image_testing['und'][$pos_count]);
+  node_save($node);
 
   file_delete($file);
 
@@ -1088,40 +1095,10 @@ function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
   // return array('#type' => 'ajax', '#commands' => $commands);
   print ajax_render($commands); // this function exits.
   exit;
-  // return;
+
   /*We can use both exit or return bcoz after rendring of html and echo of it, function should to be halt and return some value*/
   // return;
 }
-
-// function file_usage_delete(stdClass $file, $module, $type = NULL, $id = NULL, $count = 1) {
-//   // Delete rows that have a exact or less value to prevent empty rows.
-//   $query = db_delete('file_usage')
-//     ->condition('module', $module)
-//     ->condition('fid', $file->fid);
-//   if ($type && $id) {
-//     $query
-//     ->condition('type', $type)
-//       ->condition('id', $id);
-//   }
-//   if ($count) {
-//     $query->condition('count', $count, '<=');
-//   }
-//   $result = $query->execute();
-
-//   // If the row has more than the specified count decrement it by that number.
-//   if (!$result && $count > 0) {
-//     $query = db_update('file_usage')
-//       ->condition('module', $module)
-//       ->condition('fid', $file->fid);
-//     if ($type && $id) {
-//       $query
-//       ->condition('type', $type)
-//         ->condition('id', $id);
-//     }
-//     $query->expression('count', 'count - :count', array(':count' => $count));
-//     $query->execute();
-//   }
-// }
 
 function _get_form_posted_data() {
 
@@ -1151,9 +1128,6 @@ function _get_form_posted_data() {
 
   foreach($getNodeIds as $delta => $nids) {
     $loadNodeData = node_load($nids);
-
-    // $delete_link =  '/mycontent/' . $nids .'/delete_slot';
-    // $edit_link =  '/mycontent/' . $nids .'/edit_slot';
     
     $delete_link = l('Delete', 
                     url('node-delete/' . $nids.'/nojs'), 
@@ -1181,7 +1155,6 @@ function _get_form_posted_data() {
       $img_url = file_create_url($loadNodeData->field_image_testing['und']['0']['uri']);
     else
       $img_url = "http://no_image";
-
 
     $rows[] = array(
       'data' => array(  
