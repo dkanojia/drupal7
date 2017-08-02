@@ -58,11 +58,50 @@
 	                     'data_type' 	=> 'field_name',
 
 	                     'int' 			=> 'id',
-	                     'varchar' 		=> 'prod_color_code',
+	                     'int' 			=> 'product_id',
 	                     'decimal' 		=> 'sale_price',
 	                     'decimal' 		=> 'original_price',
 	                     'int' 			=> 'currency_id',
 	                     ),
+
+            		['Custom Field Generic (Of Product i.e. For Color : it can be red, yellow) Table'] => array(
+	                     
+	                     'data_type' 	=> 'field_name',
+
+	                     'int' 			=> 'id',
+	                     'varchar' 		=> 'name (for example Color)',
+	                     'varchar' 		=> 'display_type',
+	                     'int' 			=> 'sequence_order',
+	                     'tinyInt' 		=> 'is_filterable',
+	                     'varchar' 		=> 'type',
+	                     'text' 		=> 'value (name of value table insert by concatination)',
+	                     ),
+
+            		['Custom Field Value Table'] => array(
+	                     
+	                     'data_type' 	=> 'field_name',
+
+	                     'int' 			=> 'id',
+	                     'varchar' 		=> 'name (for example it can be Red, Yellow, Green of above declared color custom field)',
+	                     'int' 			=> 'custom_field_association_id',
+	                     'varchar' 		=> 'status',
+	                     'tinyInt' 		=> 'highlight_it(for future use)',
+	                     ),
+            		
+            		['Custom Field Association (with generic values) Table'] => array(
+	                     
+	                     'data_type' 	=> 'field_name',
+
+	                     'int' 			=> 'id',
+	                     'int' 			=> 'product_id',
+	                     'int' 			=> 'custom_field_generic_id',
+	                     'varchar' 		=> 'status',
+	                     'tinyInt' 		=> 'order',
+	                     ),
+
+            		// Note : Custom field generic attached with custom field value
+            		// Custom field values will be save in another table (in custom field value table).
+
             		// Detail Table will be customized in future also
 
 
@@ -78,7 +117,6 @@
 	                     'int' 			=> 'sequence_no',
 	                     ),
             		),
-
 
 
 					['File Table'] => array(
@@ -191,19 +229,52 @@
 	                     'email' 		=> 'email',
 	                     'varchar' 		=> 'subject',
 	                     'varchar' 		=> 'description',
-	                     'varchar' 		=> 'type' => array(
-	                     					'Follow',
-	                     					'New',
-	                     					'Seen',
-	                     					'Deleted',
-	                     					'Completed',
-	                     					'Discarded',
+	                     'int' 			=> 'user_id (if user login)',
+	                     'varchar'		=> 'type' => array(
+	                     					'can be enquiry or 
+	                     					can be contact mail'
 	                     					),
-	                     'varchar' 		=> 'status',
+	                     'varchar' 		=> 'flags' => array(
+	                     					'To identify ',
+	                     					'Follow , New, Seen, Deleted, Completed, Discarded',
+	                     					),
+	                     'varchar' 		=> 'status' => array(
+	                     					'will be Follow , New, Seen, Deleted, Completed, Discarded',
+	                     					),	
 	                     'datetime' 	=> 'enquiry_date',
 	                     'datetime' 	=> 'enquiry_server_time',
 	                     ),
             		),
+
+					// $categories = 
+					// 	{
+					// 	    "name":"Root Category Taxonomy",
+					// 	    "value": 'Root Cat',
+					// 	    "child":[
+					// 	        		{ 
+					// 			        	"name":"Parent Category Taxonomy", 
+					// 			        	"value": "Parent Cat",
+					// 			        	"child":[
+					// 					        		{ 
+					// 							        	"name":"First Category Taxonomy", 
+					// 							        	"value": "First Cat",
+					// 					        		},
+					// 					        		{ 
+					// 							        	"name":"Second Category Taxonomy", 
+					// 							        	"value": "Second Cat",
+					// 					        		} 
+					// 			        			]
+					// 	        		},
+					// 	    		]
+					//  	} 
+					
+					// $tax = taxonomy_term_load(17);
+					// $taxonomy = $tax->name;
+					// $facilities_construction = taxonomy_vocabulary_machine_name_load($taxonomy);
+					// $constructionList = taxonomy_get_tree($facilities_construction->vid, 0, 1, 1);
+
+					// print_r($taxonomy);
+					// print_r($constructionList);
     			);
 
 ?>

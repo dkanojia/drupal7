@@ -123,7 +123,7 @@ function form_example_form($form, &$form_state, $no_js = NULL){
 
 // function form_example_form_process($form, &$form_state) {
 function form_example_form_process($element, &$form_state) {
-  
+
   /**---------------*/
   // if(isset($_GET['n_id'])){
   //   $nodeData = [];
@@ -144,6 +144,8 @@ function form_example_form_process($element, &$form_state) {
   // drupal_goto('test', array('query'=>array('variable_name1'=>'variable_value1)));
   
   // $form['#id'] = 'form_example';
+
+  // $element['#id'] = $get_id;
 
   $element['full-container']= array(
     '#type' => 'container',
@@ -182,6 +184,25 @@ function form_example_form_process($element, &$form_state) {
   $element['full-container']['hidden_nid'] = array(
     '#type' => 'hidden', 
     '#value' => isset($_GET['n_id']) ? $_GET['n_id'] : '',
+  );
+
+  if(!empty(variable_get('form_id'))){
+      $get_value = variable_get('form_id');
+  }else{
+      variable_set('form_id', 1);
+      $get_value = variable_get('form_id');
+  }
+
+  $get_id = sprintf('%04d' ,$get_value);
+  $uniq_var_id = 'STU' . $get_id . 'FORM';
+
+  $element['full-container']['frm_id'] = array(//you can find a list of available types in the form api
+    '#type' => 'textfield', 
+    '#title' => 'Form ID',
+    '#size' => 25,
+    '#default_value' => $uniq_var_id,
+    '#maxlength' => 10,
+    '#disabled' => TRUE, //make this field required 
   );
 
   $element['full-container']['title'] = array(//you can find a list of available types in the form api
@@ -795,6 +816,14 @@ function form_example_form_submit($form, &$form_state) {
       $node->field_image_testing['und'][] = (array)$form_state['values']['file'][$i];     
     }
 
+    // if(!empty(variable_get('form_id'))){
+    //   $get_value = variable_get('form_id');
+    //   $get_value++;
+    //   variable_set('form_id', $get_value);
+    // }else{
+    //   variable_set('form_id', 1);
+    // }
+
     node_save($node);
     drupal_set_message('My Edited Node No :'.$node->nid);
 
@@ -850,6 +879,14 @@ function form_example_form_submit($form, &$form_state) {
     // $newNode->sticky = 0;
     
     // exit;
+    if(!empty(variable_get('form_id'))){
+      $get_value = variable_get('form_id');
+      $get_value++;
+      variable_set('form_id', $get_value);
+    }else{
+      variable_set('form_id', 1);
+    }
+    
     node_save($newNode);
     // drupal_set_message('My Node No :'.$newNode->nid);
 
@@ -886,6 +923,7 @@ function form_example_save_newsletter_data($form, &$form_state) {
     $form_state['asset_cat_first_storage'] = array();
     $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
     $commands = array();    
+    // $commands[] = ajax_command_invoke('#edit-frm-id', 'val', array(''));
     $commands[] = ajax_command_invoke('#edit-title', 'val', array(''));
     $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
     $commands[] = ajax_command_invoke('#edit-description-value', 'val', array(''));
