@@ -66,6 +66,15 @@ function form_example_menu() {
       'type' => MENU_CALLBACK
   );
 
+  $items['formmodule/%/%ctools_js'] = array(
+    'title' => 'Pop Up Form', //page title
+    'file' => 'form_example_inc.inc',
+    'page callback' => 'form_example_callback',
+    'page arguments' => array(1,2),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 

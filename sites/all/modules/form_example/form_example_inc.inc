@@ -7,15 +7,20 @@
 
 function _get_rendering_element() {
 
+  ctools_include('modal');
+  ctools_modal_add_js();
+
   $elements = [];
   
   $getForm = drupal_get_form('form_example_form');
 
   $elements['render_form'] = array(
     '#markup' => drupal_render($getForm),
+
     // '#prefix' => '<div class="custom_form_main_container">',
     // '#suffix' => '</div>'
   );
+
   
   // $elements['custom_user_listing'] = array(
   //   '#markup' => custom_get_user_table_data(),
@@ -32,8 +37,9 @@ function _get_rendering_element() {
   return $elements;
 }
 
-function form_example_form($form, &$form_state, $no_js = NULL){
-
+// function form_example_form($form, &$form_state, $no_js = NULL){
+function form_example_form($form, &$form_state){
+  
   if(empty($form_state['asset_cat_first_storage'])) {
       $tempIdentifer = uniqid();
       $form_state['asset_cat_first_storage'][]  = $tempIdentifer;
@@ -95,6 +101,15 @@ function form_example_form($form, &$form_state, $no_js = NULL){
     '#markup' => '</div>',
   );
 
+  if(!empty($form_state['nid'])){
+    $form['popup-nod-id'] = array(
+      '#type' => 'hidden', 
+      '#title' => t('hello'),
+      '#default_value' => $form_state['nid'],
+      '#after_build' => array('form_example_edit_popup_form_callback'),
+    );
+  }
+
   $form['edit-nodeId'] = array(
     '#type' => 'hidden', 
     '#attributes' => array('id' => 'edit-nodeId'),
@@ -105,14 +120,14 @@ function form_example_form($form, &$form_state, $no_js = NULL){
     '#value' => t('Save Form Data'), 
     // '#submit' => array('test_program_data_submit'),
     '#submit' => array('form_example_form_submit'),
-    '#ajax' => array(      
-      // 'callback' => 'custom_save_contact_data',       
-      'callback' => 'form_example_save_newsletter_data',       
-      // 'wrapper' => 'custom-user-data-listing-cust',
-      'wrapper' => 'form-example-data-listing',
-      'method' => 'replace',
-      'effect' => 'fade',       
-    ), 
+    // '#ajax' => array(      
+    //   // 'callback' => 'custom_save_contact_data',       
+    //   'callback' => 'form_example_save_newsletter_data',       
+    //   // 'wrapper' => 'custom-user-data-listing-cust',
+    //   'wrapper' => 'form-example-data-listing',
+    //   'method' => 'replace',
+    //   'effect' => 'fade',       
+    // ), 
     '#prefix' => '<div class="pull-left custom-test-program margin-bottom-10">',
     '#suffix' => '</div>', 
   );
@@ -629,6 +644,22 @@ function form_example_form_process($element, &$form_state) {
   $status = array('3');
   $options = array('0','1','2','3','4');
 
+  // $element['full-container']['popup-nod-list'] = array(
+  //   '#type' => 'select',
+  //   '#title' => t('Selected'),
+  //   '#options' =>$subject_list, 
+  //   '#prefix' =>'<div style="display:none;">',
+  //   '#suffix' =>'</div>',
+  //   '#ajax' => array( 
+  //     // 'callback' => 'form_example_edit_form_callback',  
+  //     'callback' => 'form_example_edit_form_callback',  
+  //     'wrapper' => 'project_test_data_container',  
+  //   ),
+  //   '#attributes' => array('class'=> array('edit-custom-popup-node-select')),
+  //   // '#attributes' => array('class'=> array('edit-custom-node-select form-select ajax-processed')),
+  // );
+
+
   return $element;
 }
 
@@ -831,12 +862,14 @@ function form_example_form_submit($form, &$form_state) {
     $form['#attached']['js'] = array(
        drupal_get_path('module', 'form_example') . '/js/form_alter.js',
     );
-
+    
     $tempIdentifer = uniqid();
     $form_state['input'] = array();
     $form_state['asset_cat_first_storage'] = array();
     $form_state['asset_cat_first_storage'][] = $tempIdentifer;
     $form_state['rebuild'] = TRUE;
+
+    // $form_state['ajax_commands'] = ctools_modal_command_dismiss();
 
   }else{
 
@@ -895,6 +928,26 @@ function form_example_form_submit($form, &$form_state) {
     $form_state['asset_cat_first_storage'] = array();
     $form_state['asset_cat_first_storage'][] = $tempIdentifer;
     $form_state['rebuild'] = TRUE;
+
+    if((isset($form_state['ajax']))?(($form_state['ajax']==1)?true:false):false) {
+        $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
+        
+        $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+        // $form_state['ajax_commands'][] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
+        
+        // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
+    }
+
+
+    //     // $form_state['ajax'] = array(      
+    //     //   // 'callback' => 'custom_save_contact_data',       
+    //     //   'callback' => 'form_example_save_newsletter_data',       
+    //     //   // 'wrapper' => 'custom-user-data-listing-cust',
+    //     //   'wrapper' => 'form-example-data-listing',
+    //     //   'method' => 'replace',
+    //     //   'effect' => 'fade',       
+    //     // );
+    
   }
   
   //   // $tableArray = array(
@@ -930,6 +983,7 @@ function form_example_save_newsletter_data($form, &$form_state) {
 
     $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
     $commands[] = ajax_command_html('#main-container-multi-replace', render($form['main-container-multi']));
+
     return array('#type' => 'ajax', '#commands' => $commands); 
 }
 
@@ -947,7 +1001,6 @@ function form_example_edit_form_callback($form, $form_state) {
 
     $edit_id = $triggeringElement['#value'];  
     $edit_node = node_load($edit_id);   
-
     $commands[] = ajax_command_invoke('#edit-nodeId', 'val', array($edit_id));
     $commands[] = ajax_command_invoke('#edit-title', 'val', array($edit_node->title));
     $commands[] = ajax_command_invoke('#edit-price', 'val', array(''));
@@ -971,6 +1024,44 @@ function form_example_edit_form_callback($form, $form_state) {
     // exit; 
 
   return array('#type' => 'ajax', '#commands' => $commands);
+
+}
+
+function form_example_edit_popup_form_callback($form, $form_state) {
+  $commands = array();
+  
+  if(!empty($form_state['nid'])) {
+
+    $edit_id = $form_state['nid'];  
+    $edit_node = node_load($edit_id);   
+    // print_r($edit_node);
+    $commands[] = ajax_command_invoke('#edit-title--2', 'val', array($edit_node->title));
+    $commands[] = ajax_command_invoke('#edit-price--2', 'val', array(''));
+    $commands[] = ajax_command_invoke('#edit-description-value--2', 'val', array($edit_node->body['und'][0]['value']));
+
+    $radio = $edit_node->field_list_integer_;
+    $v = $radio['und'][0]['value'];
+
+    // $commands[] = ajax_command_invoke('.vehicle_radios input[type="checkbox"]', 'attr',array('checked', 'true'));
+    // $commands[] = ajax_command_invoke('.operation-done input[value="'.$item1['value'].'"]', 'attr',array('checked', 'true'));
+    // $commands[] = ajax_command_invoke('.form-custom-radio input[value="'.$v.'"]', 'attr',array('checked', 'true'));
+    
+    // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
+    // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
+
+    // $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+    // $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($edit_id));
+  }  
+  // print "<pre>";
+  // print_r($commands);
+  // exit;
+  print ajax_render($commands);
+  exit;
+    // print "<pre>";
+    // print_r($commands);
+    // exit; 
+
+  // return array('#type' => 'ajax', '#commands' => $commands);
 
 }
 
@@ -1001,6 +1092,67 @@ function form_example_delete_callback($node_id, $no_js = NULL) {
   
 // }
 
+
+/**
+ * Ajax menu callback.
+ */
+function form_example_callback($nid,$ajax) {
+  if ($ajax) {
+    ctools_include('ajax');
+    ctools_include('modal');
+
+    $form_state = array(
+      'ajax' => TRUE,
+      'title' => t('Form Example Modal Form'),
+      'nid' => $nid,
+    );
+
+    // Use ctools to generate ajax instructions for the browser to create
+    // a form in a modal popup.
+    // $output = ctools_modal_form_wrapper('mymodule_form', $form_state);
+    $output = ctools_modal_form_wrapper('form_example_form', $form_state);
+    // If the form has been submitted, there may be additional instructions
+    // such as dismissing the modal popup.
+    if (!empty($form_state['ajax_commands'])) {
+      $output = $form_state['ajax_commands'];
+    }
+
+    // Return the ajax instructions to the browser via ajax_render().
+    print ajax_render($output);
+    drupal_exit();
+  }
+  else {
+    // return drupal_get_form('mymodule_form');
+    return drupal_get_form('form_example_form');
+  }
+}
+
+/**
+ * Helper function to make a link.
+ */
+function _form_example_make_link($link_text = '', $nids) {
+  // Set a default value if no text in supplied.
+  if (empty($link_text)) {
+    $link_text = 'Edit Using Pop Up';
+  }
+
+  return '<div id="magical-modal-link">' . l($link_text, 
+                                    'formmodule/'.$nids.'/nojs', array(
+                                      'attributes' => array(
+                                        'class' => array(
+                                            'ctools-use-modal'
+                                            // 'edit-form-detail'
+                                          ),
+                                        'data-value' => $nids
+                                      )
+                                    )
+                                  ) . 
+          '</div>';
+}
+
+/**
+ * Getting Image Tabel To show at edit time.
+ */
 function _get_image_table_data($edit_id){
   if(!($edit_id == NULL)){
     drupal_add_js( drupal_get_path('module', 'form_example') . '/js/form_alter.js');
@@ -1149,6 +1301,7 @@ function _get_form_posted_data() {
     array('data'=>'Photo'),
     array('data'=>'Edit Link'),
     array('data'=>'Delete Link'),
+    array('data'=>'Edit Link Using Pop Up Modal'),
   );  
   
   $i = 1;
@@ -1188,6 +1341,11 @@ function _get_form_posted_data() {
                       )
                     )
                   );
+
+    ctools_include('modal');
+    ctools_modal_add_js();
+
+    $edit_link_for_popup = _form_example_make_link('Edit Using Pop Up', $nids);
     
     if(isset($loadNodeData->field_image_testing['und']['0']['uri']))
       $img_url = file_create_url($loadNodeData->field_image_testing['und']['0']['uri']);
@@ -1220,6 +1378,7 @@ function _get_form_posted_data() {
           //       )
           //   )
           // )
+        array('data'=>$edit_link_for_popup),
                   
       ),  
     );

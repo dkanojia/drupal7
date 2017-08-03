@@ -1,14 +1,5 @@
-Drupal.behaviors.custom_module = {	
+Drupal.behaviors.form_example = {	
   attach: function (context, settings) {
-    
-    jQuery('.edit-form-detail').unbind('click').bind('click', function(ev) {
-      ev.preventDefault();         
-      var nid = jQuery(this).attr('data-value');  
-      console.log(nid);  
-      
-      jQuery('#edit-nod-list').val(nid).trigger('change');   
-      //alert(nid);      
-    }); 
 
     // jQuery('.ctools-use-modal').unbind('click').bind('click', function(ev) {
     //   // ev.preventDefault();         
