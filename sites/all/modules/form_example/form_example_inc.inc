@@ -21,13 +21,6 @@ function _get_rendering_element() {
     // '#suffix' => '</div>'
   );
 
-  
-  // $elements['custom_user_listing'] = array(
-  //   '#markup' => custom_get_user_table_data(),
-  //   '#prefix' =>'<div class="clearfix margin-bottom-10"><div class="project-summary-listing" id="custom-user-data-listing-cust2">',
-  //   '#suffix' =>'</div></div>',
-  // );
-
   $elements['render_table'] = array(
     '#markup' => _get_form_posted_data(),
     '#prefix' => '<div class="custom_form_main_container"> <div class="project-summary-listing" id="form-example-data-listing">',
@@ -37,8 +30,11 @@ function _get_rendering_element() {
   return $elements;
 }
 
-// function form_example_form($form, &$form_state, $no_js = NULL){
-function form_example_form($form, &$form_state){
+function form_example_form($form, &$form_state, $node = NULL) {
+  
+  if (empty($form_state['node']) && !empty($node)) {
+    $form_state['node'] = $node;
+  }
   
   if(empty($form_state['asset_cat_first_storage'])) {
       $tempIdentifer = uniqid();
@@ -49,13 +45,19 @@ function form_example_form($form, &$form_state){
     $form_state['form_example_form_subject_value'] = array();   
   }
 
-  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'nod-list' ) {    
+  if( (!empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'nod-list' ) || (!empty($form_state['node']))){    
     $triggeringElement = $form_state['triggering_element'];    
-    $edit_id = $triggeringElement['#value'];      
-    $edit_node = node_load($edit_id);  
+
+    if(!empty($form_state['node'])){
+      $no_de = $form_state['node'];
+      $edit_node = node_load($no_de->nid);
+    }else{
+      $edit_id = $triggeringElement['#value'];
+      $edit_node = node_load($edit_id);
+    }
+
     $form_state['asset_cat_first_storage'] = array();
     $form_state['form_example_form_subject_value'] = array();
-    
     $subjects = $edit_node->field_subject;
          
     foreach($subjects['und'] as $subject => $val) { 
@@ -77,14 +79,6 @@ function form_example_form($form, &$form_state){
     '#process' => array('form_example_form_process'), 
   );
 
-  // $form['image-container'] = array(
-  //   '#type' => 'container',
-  //   '#attributes' => array('class' => array('row')),
-  //   '#prefix' => '<div class="clearfix margin-bottom-10"><div id="image_container_section" class="project-detail project_test_data_container">', 
-  //   '#suffix' => '</div></div>',
-  //   '#process' => array('form_example_image_form'),
-  //   );
-
   $form['container-prefix'] = array(
     '#markup' => '<div id="main-container-multi-replace">',
   );
@@ -100,15 +94,6 @@ function form_example_form($form, &$form_state){
   $form['container-suffix'] = array(
     '#markup' => '</div>',
   );
-
-  if(!empty($form_state['nid'])){
-    $form['popup-nod-id'] = array(
-      '#type' => 'hidden', 
-      '#title' => t('hello'),
-      '#default_value' => $form_state['nid'],
-      '#after_build' => array('form_example_edit_popup_form_callback'),
-    );
-  }
 
   $form['edit-nodeId'] = array(
     '#type' => 'hidden', 
@@ -139,11 +124,6 @@ function form_example_form($form, &$form_state){
 // function form_example_form_process($form, &$form_state) {
 function form_example_form_process($element, &$form_state) {
 
-  /**---------------*/
-  // if(isset($_GET['n_id'])){
-  //   $nodeData = [];
-  //   $nodeData = node_load($_GET['n_id']);  
-  // }
   /**
   Adding Css
     */
@@ -159,8 +139,6 @@ function form_example_form_process($element, &$form_state) {
   // drupal_goto('test', array('query'=>array('variable_name1'=>'variable_value1)));
   
   // $form['#id'] = 'form_example';
-
-  // $element['#id'] = $get_id;
 
   $element['full-container']= array(
     '#type' => 'container',
@@ -181,6 +159,10 @@ function form_example_form_process($element, &$form_state) {
   // print "<pre>";
   // print_r($subject_list);
   // exit; 
+
+  if (!empty($form_state['node'])) {
+    $node = $form_state['node'];
+  }
   
   $element['full-container']['nod-list'] = array(
     '#type' => 'select',
@@ -224,7 +206,8 @@ function form_example_form_process($element, &$form_state) {
     '#type' => 'textfield', 
     '#title' => 'Name / Title',
     '#size' => 10,
-    // '#default_value' => isset($nodeData->title) ? $nodeData->title : ' ',
+    '#attributes' => array('class' => array('titleclass')),
+    '#default_value' => isset($node->title) ? $node->title : '',
     '#maxlength' => 10,
     '#required' => TRUE, //make this field required 
   );
@@ -232,7 +215,7 @@ function form_example_form_process($element, &$form_state) {
   $element['full-container']['copy'] = array(  
     '#type' =>'checkbox', 
     '#title' => t('Send me a copy. (Testing Of checkbox)'),
-    // '#default_value' => isset($nodeData->field_boolean_on_off_check_box_['und']['0']['value']) ? $nodeData->field_boolean_on_off_check_box_['und']['0']['value'] : 0,
+    // '#default_value' => isset($node->field_boolean_on_off_check_box_['und']['0']['value']) ? $node->field_boolean_on_off_check_box_['und']['0']['value'] : 0,
   );
 
   $element['full-container']['high_school']['tests_taken'] = array(
@@ -400,6 +383,10 @@ function form_example_form_process($element, &$form_state) {
       $edit_id = NULL;      
   }
 
+  if(!empty($node->nid)){
+    $edit_id = $node->nid;
+  }
+
   $element['full-container']['get_image_table'] = array(
     '#markup' => _get_image_table_data($edit_id),
     '#prefix' => '<div class="image_main_container"> <div class="image-listing" id="form-example-image-listing">',
@@ -456,7 +443,7 @@ function form_example_form_process($element, &$form_state) {
   $f = $form['settings']['active'] = array(
     '#type' => 'radios',
     '#title' => t('Poll status (Testing of Multi Radio Button)'),
-    '#default_value' => isset($node->active) ? $node->active : 1,
+    // '#default_value' => isset($node->active) ? $node->active : 1,
     // '#default_value' => $node->active,
     '#options' => $active,
     '#description' => t('When a poll is closed, visitors can no longer vote for it.'),
@@ -514,13 +501,13 @@ function form_example_form_process($element, &$form_state) {
     '#empty' => t('No users found'),
   );
 
-  if(isset($nodeData->body['und']['0']['value']))
-    $body = $nodeData->body['und']['0']['value'];
+  if(isset($node->body['und']['0']['value']))
+    $body = $node->body['und']['0']['value'];
 
   $element['full-container']['description'] = array(
     '#type' => 'text_format',
     '#title' => t('Description (Testing of Text Format)'),
-    // '#default_value' => isset($body) ? $body : '',
+    '#default_value' => isset($body) ? $body : '',
   );
 
   $element['full-container']['keywords'] = array(
@@ -625,52 +612,21 @@ function form_example_form_process($element, &$form_state) {
     '#value' => $bid
   );
 
-  // $element['full-container']['actions'] = array('#type' => 'actions');
-  
-  // $element['full-container']['actions']['submit'] = array(
-  //   '#type' => 'submit',
-  //   '#value' => t('Submit Form'),
-  // );
-
-  // $element['full-container']['actions']['delete'] = array(
-  //   '#type' => 'button',
-  //   '#value' => t('Reset Form'),
-  // );
-
-  // $element['full-container']['actions']['cancel'] = array(
-  //   '#markup' => l(t('Cancel Form'), 'foo/bar'),
-  // );
-
   $status = array('3');
   $options = array('0','1','2','3','4');
-
-  // $element['full-container']['popup-nod-list'] = array(
-  //   '#type' => 'select',
-  //   '#title' => t('Selected'),
-  //   '#options' =>$subject_list, 
-  //   '#prefix' =>'<div style="display:none;">',
-  //   '#suffix' =>'</div>',
-  //   '#ajax' => array( 
-  //     // 'callback' => 'form_example_edit_form_callback',  
-  //     'callback' => 'form_example_edit_form_callback',  
-  //     'wrapper' => 'project_test_data_container',  
-  //   ),
-  //   '#attributes' => array('class'=> array('edit-custom-popup-node-select')),
-  //   // '#attributes' => array('class'=> array('edit-custom-node-select form-select ajax-processed')),
-  // );
-
 
   return $element;
 }
 
 // function form_example_multiple_subject_process($element,&$form_state) {
 function form_example_multiple_subject_process($element, &$form_state) {
+
   $storage = $form_state['asset_cat_first_storage'];
 
   $element['#storage'] = $storage;
-  
+
   $element['fieldset_container'] = array(
-      '#type' => 'fieldset',
+    '#type' => 'fieldset',
     '#title' => t('Your Subject'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE, 
@@ -705,7 +661,6 @@ function form_example_multiple_subject_process($element, &$form_state) {
       $stdefault = $form_state['form_example_form_subject_value'][$uniqId];
       $element['fieldset_container']['test_name'][$uniqId]['#default_value'] = $stdefault;
     }
-    
     //dpm($element['fieldset_container']);
     // drupal_set_message(print_r($form_state['form_example_form_subject_value'],1));
   }
@@ -731,11 +686,14 @@ function form_example_multiple_subject_process($element, &$form_state) {
 }
 
 function custom_multiple_subject_add_submit_callback($form, &$form_state) {
-
   $triggerElement = $form_state['triggering_element'];
   $tempIdentifer = uniqid();
   $form_state['asset_cat_first_storage'][]  = $tempIdentifer;    
   $form_state['rebuild'] = TRUE;
+
+  print "<pre>";
+  print_r($form_state['asset_cat_first_storage']);
+  exit;
 }
 
 function custom_multiple_subject_add_ajax_callback(&$form, &$form_state) {  
@@ -745,7 +703,9 @@ function custom_multiple_subject_add_ajax_callback(&$form, &$form_state) {
 // function remove_asset_category_handler(&$form,&$form_state) {
 function remove_subject_asset_category_handler(&$form,&$form_state) {
   $triggering_element = $form_state['triggering_element'];
-
+  print "<pre>";
+  print_r($form_state['triggering_element']);
+  exit;
   $identifier = $triggering_element['#parents'][1];
   if(isset($form_state['asset_cat_first_storage'])){
     foreach ($form_state['asset_cat_first_storage'] as $key => $value) {
@@ -761,6 +721,7 @@ function remove_subject_asset_category_handler(&$form,&$form_state) {
 function asset_category_row_callback_for_remove(&$form, &$form_state) {
   return $form['main-container-multi'];
 }
+
 function form_example_form_validate($form, &$form_state) {
   
   $num_files = count($_FILES['files']['name']);
@@ -799,10 +760,15 @@ function cvf_convert_object_to_array($data) {
 
 function form_example_form_submit($form, &$form_state) {
 
-  $node_id = $form_state['values']['edit-nodeId'];
+  if(!empty($form_state['node'])){
+    $nod = $form_state['node'];
+    $node_id = $nod->nid; 
+  }else{
+    $node_id = $form_state['values']['edit-nodeId'];
+  }
+
   global $user;
 
-  // if(!isset($form_state['values']['hidden_nid'])){
   if(!empty($node_id)){
 
     $node = [];
@@ -869,7 +835,10 @@ function form_example_form_submit($form, &$form_state) {
     $form_state['asset_cat_first_storage'][] = $tempIdentifer;
     $form_state['rebuild'] = TRUE;
 
-    // $form_state['ajax_commands'] = ctools_modal_command_dismiss();
+    if((isset($form_state['ajax']))?(($form_state['ajax']==1)?true:false):false) {
+        $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
+        $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+    }
 
   }else{
 
@@ -933,42 +902,8 @@ function form_example_form_submit($form, &$form_state) {
         $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
         
         $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
-        // $form_state['ajax_commands'][] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
-        
-        // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
     }
-
-
-    //     // $form_state['ajax'] = array(      
-    //     //   // 'callback' => 'custom_save_contact_data',       
-    //     //   'callback' => 'form_example_save_newsletter_data',       
-    //     //   // 'wrapper' => 'custom-user-data-listing-cust',
-    //     //   'wrapper' => 'form-example-data-listing',
-    //     //   'method' => 'replace',
-    //     //   'effect' => 'fade',       
-    //     // );
-    
   }
-  
-  //   // $tableArray = array(
-  //   //   'Category Table' => 'id
-  //   //                       cat_name
-  //   //                       cat_descr
-  //   //                       parent_cat_id', 
-      
-  //   //   'Product Table' => 'id
-  //   //                       cat_id
-  //   //                       prod_name
-  //   //                       prod_descr
-  //   //                       prod_price
-  //   //                       currency_id
-  //   //                       ',
-
-  //   //   'Currency Table' => 'id
-  //   //                       curr_name
-  //   //                       curr_value', 
-  //   //   '' => '', 
-  //   // );
 }
 
 function form_example_save_newsletter_data($form, &$form_state) {
@@ -1007,61 +942,16 @@ function form_example_edit_form_callback($form, $form_state) {
     $commands[] = ajax_command_invoke('#edit-description-value', 'val', array($edit_node->body['und'][0]['value']));
 
     $radio = $edit_node->field_list_integer_;
-    $v = $radio['und'][0]['value'];
-
-    // $commands[] = ajax_command_invoke('.vehicle_radios input[type="checkbox"]', 'attr',array('checked', 'true'));
-    // $commands[] = ajax_command_invoke('.operation-done input[value="'.$item1['value'].'"]', 'attr',array('checked', 'true'));
-    $commands[] = ajax_command_invoke('.form-custom-radio input[value="'.$v.'"]', 'attr',array('checked', 'true'));
+    $val = $radio['und'][0]['value'];
+    $commands[] = ajax_command_invoke('.form-custom-radio input[value="'.$val.'"]', 'attr',array('checked', 'true'));
     
     $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
-    // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
 
     $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
     $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($edit_id));
   }  
-    // print "<pre>";
-    // print_r($commands);
-    // exit; 
 
   return array('#type' => 'ajax', '#commands' => $commands);
-
-}
-
-function form_example_edit_popup_form_callback($form, $form_state) {
-  $commands = array();
-  
-  if(!empty($form_state['nid'])) {
-
-    $edit_id = $form_state['nid'];  
-    $edit_node = node_load($edit_id);   
-    // print_r($edit_node);
-    $commands[] = ajax_command_invoke('#edit-title--2', 'val', array($edit_node->title));
-    $commands[] = ajax_command_invoke('#edit-price--2', 'val', array(''));
-    $commands[] = ajax_command_invoke('#edit-description-value--2', 'val', array($edit_node->body['und'][0]['value']));
-
-    $radio = $edit_node->field_list_integer_;
-    $v = $radio['und'][0]['value'];
-
-    // $commands[] = ajax_command_invoke('.vehicle_radios input[type="checkbox"]', 'attr',array('checked', 'true'));
-    // $commands[] = ajax_command_invoke('.operation-done input[value="'.$item1['value'].'"]', 'attr',array('checked', 'true'));
-    // $commands[] = ajax_command_invoke('.form-custom-radio input[value="'.$v.'"]', 'attr',array('checked', 'true'));
-    
-    // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
-    // $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
-
-    // $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
-    // $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($edit_id));
-  }  
-  // print "<pre>";
-  // print_r($commands);
-  // exit;
-  print ajax_render($commands);
-  exit;
-    // print "<pre>";
-    // print_r($commands);
-    // exit; 
-
-  // return array('#type' => 'ajax', '#commands' => $commands);
 
 }
 
@@ -1070,33 +960,16 @@ function form_example_delete_callback($node_id, $no_js = NULL) {
   $commands = array();
   node_delete($node_id);  
   $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
-  // return array('#type' => 'ajax', '#commands' => $commands);
   print ajax_render($commands); // this function exits.
   exit;
   /*We can use both exit or return bcoz after rendring of html and echo of it, function should to be halt and return some value*/
   // return;
 }
 
-
-// function form_example_image_form(){
-// function form_example_image_form($element, &$form_state){
-
-
-//   $element['get_image_table'] = array(
-//     '#markup' => _get_image_table_data(),
-//     '#prefix' => '<div class="image_main_container"> <div class="image-listing" id="form-example-image-listing">',
-//     '#suffix' => '</div></div>'
-//   );
-
-//   return $element;
-  
-// }
-
-
 /**
  * Ajax menu callback.
  */
-function form_example_callback($nid,$ajax) {
+function form_example_callback($node, $ajax = NULL) {
   if ($ajax) {
     ctools_include('ajax');
     ctools_include('modal');
@@ -1104,7 +977,7 @@ function form_example_callback($nid,$ajax) {
     $form_state = array(
       'ajax' => TRUE,
       'title' => t('Form Example Modal Form'),
-      'nid' => $nid,
+      'node' => $node,
     );
 
     // Use ctools to generate ajax instructions for the browser to create
@@ -1123,7 +996,7 @@ function form_example_callback($nid,$ajax) {
   }
   else {
     // return drupal_get_form('mymodule_form');
-    return drupal_get_form('form_example_form');
+    return drupal_get_form('form_example_form', $node);
   }
 }
 
@@ -1163,8 +1036,6 @@ function _get_image_table_data($edit_id){
       array('data'=>'File Detail'),
       array('data'=>'Remove Link'),
     );  
-    // $edit_id = 103;
-    // $nodeData = node_load(103);
 
     $nodeData = node_load($edit_id);
     $nid = $nodeData->nid;
@@ -1282,7 +1153,6 @@ function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
   // }
 
   $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($node_id));
-  // return array('#type' => 'ajax', '#commands' => $commands);
   print ajax_render($commands); // this function exits.
   exit;
 
