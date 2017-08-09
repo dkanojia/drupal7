@@ -7,8 +7,8 @@
 
 function _get_rendering_element() {
 
-  ctools_include('modal');
-  ctools_modal_add_js();
+  // ctools_include('modal');
+  // ctools_modal_add_js();
 
   $elements = [];
   
@@ -49,26 +49,37 @@ function form_example_form($form, &$form_state, $node = NULL) {
     $triggeringElement = $form_state['triggering_element'];    
 
     if(!empty($form_state['node'])){
-      $no_de = $form_state['node'];
-      $edit_node = node_load($no_de->nid);
+        $no_de = $form_state['node'];
+        $edit_node = node_load($no_de->nid);
     }else{
       $edit_id = $triggeringElement['#value'];
       $edit_node = node_load($edit_id);
     }
 
-    $form_state['asset_cat_first_storage'] = array();
-    $form_state['form_example_form_subject_value'] = array();
-    $subjects = $edit_node->field_subject;
-         
-    foreach($subjects['und'] as $subject => $val) { 
+    if(empty($form_state['node-state'])) {
+      $form_state['node-state'] = '';
+    }
+
+    if((empty($form_state['node-state']) && $form_state['node-state'] != 'popup-modal' )){
+      $form_state['asset_cat_first_storage'] = array();
+      $form_state['form_example_form_subject_value'] = array();
+
+      if(!empty( $edit_node->field_subject)){
+
+        $subjects = $edit_node->field_subject;
+
+        foreach($subjects['und'] as $subject => $val) { 
+            
+          $tempIdentifer = uniqid();  
+           
+          $form_state['asset_cat_first_storage'][] = $tempIdentifer;
         
-      $tempIdentifer = uniqid();  
-       
-      $form_state['asset_cat_first_storage'][] = $tempIdentifer;
-    
-      $form_state['form_example_form_subject_value'][$tempIdentifer] = $val['value']; 
-       
-    } 
+          $form_state['form_example_form_subject_value'][$tempIdentifer] = $val['value']; 
+           
+        }
+      }
+    }
+
   }
       
   $form['main-container'] = array(
@@ -86,7 +97,8 @@ function form_example_form($form, &$form_state, $node = NULL) {
   $form['main-container-multi'] = array( 
     '#type' => 'container',
     '#attributes' => array('class'=>array('row')), 
-    '#prefix' => '<div class="clearfix margin-bottom-10"><div id="asset-container-section" class="project-detail project_test_data_container alert-container-section">', 
+    // '#prefix' => '<div class="clearfix margin-bottom-10"><div id="asset-container-section" class="project-detail project_test_data_container alert-container-section">', 
+    '#prefix' => !empty($form_state['node']) ? '<div class="clearfix margin-bottom-10"><div id="asset-container-section-edit" class="project-detail project_test_data_container alert-container-section">' : '<div class="clearfix margin-bottom-10"><div id="asset-container-section" class="project-detail project_test_data_container alert-container-section">', 
     '#suffix' => '</div></div>',
     '#process' => array('form_example_multiple_subject_process'), 
   );
@@ -374,13 +386,22 @@ function form_example_form_process($element, &$form_state) {
 
   $edit_id = '';
 
-  if( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'nod-list' ) {    
-    $triggeringElement = $form_state['triggering_element'];    
+  if(( !empty($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'nod-list' ) || (!empty($form_state['node'])) ) {    
 
-    if(isset($triggeringElement['#value']))
-      $edit_id = $triggeringElement['#value'];
-    else
+    if(!empty($form_state['node'])){
+      $no_de = $form_state['node'];
+      $edit_id = $no_de->nid;
+
+    }elseif (($form_state['triggering_element']['#name'] == 'nod-list')){
+      
+      $triggeringElement = $form_state['triggering_element'];    
+      
+      if(isset($triggeringElement['#value']))
+        $edit_id = $triggeringElement['#value'];
+
+    }else{
       $edit_id = NULL;      
+    }
   }
 
   if(!empty($node->nid)){
@@ -389,6 +410,7 @@ function form_example_form_process($element, &$form_state) {
 
   $element['full-container']['get_image_table'] = array(
     '#markup' => _get_image_table_data($edit_id),
+    // '#prefix' => !empty($form_state['node']) ? '<div class="image_main_container_edit"> <div class="image-listing-edit" id="form-example-image-listing-edit">' : '<div class="image_main_container"> <div class="image-listing" id="form-example-image-listing">',
     '#prefix' => '<div class="image_main_container"> <div class="image-listing" id="form-example-image-listing">',
     '#suffix' => '</div></div>'
   );
@@ -539,24 +561,35 @@ function form_example_form_process($element, &$form_state) {
     positioned nearer the top.'),
   );
 
-  $select_arr = array('Jaipur', 'Mumbai', 'Delhi', 'Other');
-  $element['full-container']['select_element'] = array(
+  $select_arr = array('Select City','Jaipur', 'Mumbai', 'Delhi', 'Other');
+  $element['full-container']['select-element'] = array(
     '#type' => 'select', 
-    '#title' => t('Select Your Element'), 
+    '#title' => t('Select Your City'), 
     // '#prefix' => '<div class="clearfix margin-bottom-10"><div id="dropdown-id" class="dropdown_other_field project_test_data_container">',
     // '#suffix' => '</div></div>',
     '#options' => $select_arr, 
-    '#description' => t('Please select others in dropdown'),
+    '#description' => t('Please select others in dropdown to fill new city'),
     // '#attributes' => array('onChange' => 'dropdown_page'),
-    '#ajax' => array(
-      'callback' => 'form_example_other_field_process',
-      // 'wrapper' => 'other-container-section',
-      'wrapper' => 'other-container-multi-replace',
-      'method' => 'replace',
-      'effect' => 'fade',
-      'progress' => array('type'=> 'throbber', 'message'=> NULL),
+    // '#ajax' => array(
+    //   'callback' => 'form_example_other_field_process',
+    //   // 'wrapper' => 'other-container-section',
+    //   'wrapper' => 'other-container-multi-replace',
+    //   'method' => 'replace',
+    //   'effect' => 'fade',
+    //   'progress' => array('type'=> 'throbber', 'message'=> NULL),
+    // ),
+  );
+
+  $element['full-container']['display-field'] = array(
+    '#title' => t('Please Fill Other City'),
+    '#type' => 'textfield',
+    '#states' => array(
+      'visible' => array(
+        ':input[id="edit-select-element"]' => array('value' => 4),
+      ),
     ),
   );
+
 
   if( (!empty($form_state['dropdown_element']['#name']) && $form_state['dropdown_element']['#name'] == 'new-text-field' )){  
 
@@ -693,11 +726,12 @@ function form_example_multiple_subject_process($element, &$form_state) {
       '#submit'=> array('remove_subject_asset_category_handler'),
       '#ajax' => array(
         'callback' => 'asset_category_row_callback_for_remove',
-        'wrapper' => 'asset-container-section',
+        'wrapper' => !empty($form_state['node']) ? 'asset-container-section-edit' : 'asset-container-section',
         'method' => 'replace',
         'effect' => 'fade',
         'progress' => array('type'=> 'throbber', 'message'=> NULL),
-      ),    
+      ),
+      '#limit_validation_errors' => array(),
     );
     
     if(isset($form_state['form_example_form_subject_value'][$uniqId])) {
@@ -716,13 +750,14 @@ function form_example_multiple_subject_process($element, &$form_state) {
     '#submit'=> array('custom_multiple_subject_add_submit_callback'),
     '#ajax' => array(
       'callback' => 'custom_multiple_subject_add_ajax_callback',
-      'wrapper' => 'asset-container-section',
+      'wrapper' => !empty($form_state['node']) ? 'asset-container-section-edit' : 'asset-container-section',
       'method' => 'replace',
       'effect' => 'fade',
       'progress' => array('type'=> 'throbber', 'message'=> NULL),
     ),
     '#prefix' => '<div class="table-footer-custom clearfix margin-bottom-10">',
     '#suffix' => '</div>',
+    '#limit_validation_errors' => array(),
   );
 
   return $element;
@@ -750,23 +785,19 @@ function custom_multiple_subject_add_submit_callback($form, &$form_state) {
   $triggerElement = $form_state['triggering_element'];
   $tempIdentifer = uniqid();
   $form_state['asset_cat_first_storage'][]  = $tempIdentifer;    
-  $form_state['rebuild'] = TRUE;
 
-  // print "<pre>";
-  // print_r($form_state['asset_cat_first_storage']);
-  // exit;
+  if(!empty($form_state['node']))
+    $form_state['node-state'] = 'popup-modal'; 
+
+  $form_state['rebuild'] = TRUE;
 }
 
 function custom_multiple_subject_add_ajax_callback(&$form, &$form_state) {  
   return $form['main-container-multi'];
 }
 
-// function remove_asset_category_handler(&$form,&$form_state) {
 function remove_subject_asset_category_handler(&$form,&$form_state) {
   $triggering_element = $form_state['triggering_element'];
-  // print "<pre>";
-  // print_r($form_state['triggering_element']);
-  // exit;
   $identifier = $triggering_element['#parents'][1];
   if(isset($form_state['asset_cat_first_storage'])){
     foreach ($form_state['asset_cat_first_storage'] as $key => $value) {
@@ -1088,7 +1119,7 @@ function _form_example_make_link($link_text = '', $nids) {
  * Getting Image Tabel To show at edit time.
  */
 function _get_image_table_data($edit_id){
-  if(!($edit_id == NULL)){
+  if(!($edit_id == NULL) && (!empty($edit_id))){
     drupal_add_js( drupal_get_path('module', 'form_example') . '/js/form_alter.js');
 
     $rows = array();
@@ -1101,38 +1132,41 @@ function _get_image_table_data($edit_id){
     $nodeData = node_load($edit_id);
     $nid = $nodeData->nid;
 
-    $image_arr = $nodeData->field_image_testing['und'];
-
-    $i = 1;
-    foreach ($image_arr as $key => $imag_uri_value) {
-
+    if(!empty($nodeData->field_image_testing['und'])){
+      $image_arr = $nodeData->field_image_testing['und'];
       
-      $img_url = file_create_url($imag_uri_value['uri']);
-      $img_name = $imag_uri_value['filename'];
-      $img_id = $imag_uri_value['fid'];
-      
-      $remove_link = l('Remove', 
-                      url('image-delete/' . $img_id.'/'. $nid .'/nojs'), 
-                      array( 
-                        'external'=>TRUE, 
-                        'attributes'=> array(
-                          'class'=>array('image-detail-delete','use-ajax')
+      $i = 1;
+      foreach ($image_arr as $key => $imag_uri_value) {
+
+        
+        $img_url = file_create_url($imag_uri_value['uri']);
+        $img_name = $imag_uri_value['filename'];
+        $img_id = $imag_uri_value['fid'];
+        
+        $remove_link = l('Remove', 
+                        url('image-delete/' . $img_id.'/'. $nid .'/nojs'), 
+                        array( 
+                          'external'=>TRUE, 
+                          'attributes'=> array(
+                            'class'=>array('image-detail-delete','use-ajax')
+                            )
                           )
-                        )
-                      );
+                        );
 
-      $rows[] = array(
-        'data' => array(  
-          array('data'=>$i),    
-          array('data'=>'<div> <img src="'.$img_url.'" alt="photo" style="width:65px;height:65px"> </div> 
-                        <div>'. $img_name .'</div>','class'=> array('text-left')),      
-          array('data'=>$remove_link),
-        ),  
-      );
-      
-      $i++;
+        $rows[] = array(
+          'data' => array(  
+            array('data'=>$i),    
+            array('data'=>'<div> <img src="'.$img_url.'" alt="photo" style="width:65px;height:65px"> </div> 
+                          <div>'. $img_name .'</div>','class'=> array('text-left')),      
+            array('data'=>$remove_link),
+          ),  
+        );
+        
+        $i++;
 
+      }
     }
+
     return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
   }else{
     return ;
@@ -1212,8 +1246,9 @@ function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
   //   $query->expression('count', 'count - :count', array(':count' => $count));
   //   $query->execute();
   // }
+  
+  $commands[] = ajax_command_replace('#form-example-image-listing', _get_image_table_data($node_id));
 
-  $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($node_id));
   print ajax_render($commands); // this function exits.
   exit;
 
@@ -1234,7 +1269,6 @@ function _get_form_posted_data() {
     array('data'=>'Delete Link'),
     array('data'=>'Edit Link Using Pop Up Modal'),
   );  
-  
   $i = 1;
 
   $query = db_select('node','n');
