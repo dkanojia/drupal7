@@ -75,6 +75,20 @@ function form_example_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['get-next-page-data-example/%/%/%/%ctools_js'] = array(
+    'file' => 'form_example_inc.inc',
+    'page callback' => 'get_next_page_data_records_example',
+    'page arguments' => array(1,2,3,4),
+    'access callback' => TRUE,
+  );
+
+  $items['get-total-number-of-data-example/%/%/%/%/%ctools_js'] = array(
+    'file' => 'form_example_inc.inc',
+    'page callback' => 'get_total_number_data_records_example',
+    'page arguments' => array(1,2,3,4,5),
+    'access callback' => TRUE,
+  );
+
   return $items;
 }
 

@@ -112,6 +112,12 @@ function form_example_form($form, &$form_state, $node = NULL) {
     '#attributes' => array('id' => 'edit-nodeId'),
   );
 
+  $form['datatable_page_id']= array(
+    '#type' => 'hidden',
+    '#title_display' => 'invisible',
+    '#attributes' => array('class'=> array('form-control datatable_page_id')),
+  );
+
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save Form Data'), 
@@ -1256,7 +1262,8 @@ function form_example_image_delete_callback($file_id, $node_id, $no_js = NULL) {
   // return;
 }
 
-function _get_form_posted_data() {
+// function _get_form_posted_data() {
+function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$startRange=0, $endRange=10) {
 
   drupal_add_js( drupal_get_path('module', 'form_example') . '/js/form_alter.js');
 
@@ -1277,11 +1284,35 @@ function _get_form_posted_data() {
 
   // Initialize the pager in query
   // $query = $query->extend('TableSort')->extend('PagerDefault')->limit(25);
+  
+  // Initialize the pager by second method
 
-  $result = $query->execute()->fetchAll() ;
+  $query_data = clone $query;
+  $execute_data = $query_data->execute();
+
+  $row_count = $execute_data->rowCount();
+
+
+  if($startRange == 0)
+    $getEtcNodes = $query->range($startRange,10)->execute()->fetchAll();
+  else
+    $getEtcNodes = $query->range($endRange,10)->execute()->fetchAll();
+
+  
+  // $result = $query->execute()->fetchAll() ;
+
+  // $aded = clone $query;
+  // $aded_sayi = $aded->execute();
+  // $rakam = $aded_sayi->rowCount();  
+  // if($startRange == 'select') {
+  //   $getSpendingNodes = $query->range(0,$endRange)->execute()->fetchCol();
+  // }
+  // else { 
+  //   $getSpendingNodes = $query->range($endRange,5)->execute()->fetchCol();
+  // }
 
   $getNodeIds = array();
-  foreach ($result as $res_arr) {
+  foreach ($getEtcNodes as $res_arr) {
       $getNodeIds[] = $res_arr->nid;
   }
 
@@ -1354,21 +1385,29 @@ function _get_form_posted_data() {
     $i++;
   }
 
+  /*
+  By default table with pager
+  **/
+  // $per_page = 10;
+  // // Initialize the pager
+  // $current_page = pager_default_initialize(count($rows), $per_page);
+  // // Split your list into page sized chunks
+  // $chunks = array_chunk($rows, $per_page, TRUE);
+  // // Show the appropriate items from the list
+  // $output = theme('table', array('header' => $header, 'rows' => $chunks[$current_page]));
+  // // Show the pager
+  // $output .= theme('pager', array('quantity',count($rows)));
 
-  $per_page = 10;
-  // Initialize the pager
-  $current_page = pager_default_initialize(count($rows), $per_page);
-  // Split your list into page sized chunks
-  $chunks = array_chunk($rows, $per_page, TRUE);
-  // Show the appropriate items from the list
-  $output = theme('table', array('header' => $header, 'rows' => $chunks[$current_page]));
-  // Show the pager
-  $output .= theme('pager', array('quantity',count($rows)));
+  // return $output;
 
-  return $output;
-
+  /*
+  By default table
+  **/
   // return theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet'));
 
+  /*
+  Using pager with query
+  **/
   // return theme_table(
   //   array(
   //     "header" => $header,
@@ -1381,5 +1420,83 @@ function _get_form_posted_data() {
   //   )
   // ).theme("pager");
 
+  /*
+  Using ajax pager
+  **/
+  $outputBefore = _get_pager_option_data_list($projectId,'nextpage');
+  if(!$ajax){
+    $output = theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet','attributes'=>array('class'=>array('table','custom-table','table-hover','table-bordered','text-center'))));       
+  }else{
+    $output = theme('feedback_table_rows', array('header' => array(), 'rows' => $rows));
+  }
+
+  $pagerGene = '';
+  if($row_count > 10) {  
+    $pagerGene .= '<div class="item-list"><ul class="pager">';
+    $pagerGene .= '<li class="pager-current">'.l('<< First', 'get-next-page-data-example/nextpage/0/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-0')))).'</li>';
+    if($row_count > 10) {
+      $getpageLimit = $row_count/10;
+    $getpageLimit = ceil($getpageLimit);
+    }
+    for($i = 1; $i<=$getpageLimit; $i++) {
+      $pagerGene .= '<li class="pager-current">'.l($i, 'get-next-page-data-example/nextpage/'.$i.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-'.$i)))).'</li>';
+    }
+    $pagerGene .= '<li class="pager-current">'.l('Last >>', 'get-next-page-data-example/nextpage/'.$getpageLimit.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-0')))).'</li>';
+    $pagerGene .= '</ul></div>';
+  }
+  return $output.$pagerGene;
 }
 
+function _get_pager_option_data_list($projectId,$type) {
+  $output = '<div class="item-data-list" style="display:none;"><ul class="pager-list">';
+  $output .= '<li class="pager-no-10">'.l(10, 'get-total-number-of-data-example/0/10/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-10')))).'</li><li class="pager-no-25">'.l(25, 'get-total-number-of-data-example/0/25/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-25')))).'</li><li class="pager-no-30">'.l(30, 'get-total-number-of-data-example/0/30/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-30')))).'</li><li class="pager-no-50">'.l(50, 'get-total-number-of-data-example/0/50/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-50')))).'</li><li class="pager-no-100">'.l(100, 'get-total-number-of-data-example/0/100/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-100')))).'</li></ul></div>';
+  $output .= '<div class="col-md-3 padding-0 margin-bottom-15 pull-left"><div class="item-list-select input-group"><span class="input-group-addon">Show Entries: </span>
+          <select class="pager-load-more-to" name="pager-navigation-control" for="'.$projectId.'">
+              <option value="10">10</option>
+                <option value="25">25</option>
+              <option value="30">30</option>
+              <option value="50" selected="selected">50</option>
+              <option value="100">100</option>
+              </select>';
+  $output .= '</div></div>';
+  return $output;
+}
+
+function get_next_page_data_records_example($type,$pageNo,$proId, $ajax = NULL) {   
+  ctools_include('ajax');    
+  if($pageNo == 0 || $pageNo == 1) {
+    $from = 0;
+    $to = 10;
+  }
+  else {
+    $from = ($pageNo - 1) * 10;
+    $to = $pageNo * 10;
+  }
+  $commands = array();
+  
+  if($type == 'nextpage') {
+    // $output = get_commitment_listing_table_data($proId,'','', $ajax=FALSE, $from, $to);
+    $output = _get_form_posted_data($proId,'','', $ajax=FALSE, $from, $to);
+    $commands[] = ajax_command_html('#form-example-data-listing', $output);
+  }
+  
+  // $commands[] = ajax_command_invoke("input.datatable_page_id", 'val',array($pageNo));  
+  print ajax_render($commands);
+  exit;   
+}
+
+function get_total_number_data_records_example($start,$end,$type,$proId,$ajax = NULL) {
+  ctools_include('ajax');
+  $commands = array();
+  
+  if($type == 'nextpage') {
+    // $output = get_commitment_listing_table_data($proId,'','', $ajax=FALSE, 'select', $end);
+    $output = _get_form_posted_data($proId,'','', $ajax=FALSE, $from, $to);
+    $commands[] = ajax_command_html('#form-example-data-listing', $output);
+  }
+    
+  $commands[] = ajax_command_invoke("select.pager-load-more-to", 'val',array($end));
+  
+  print ajax_render($commands);
+  exit;   
+}
