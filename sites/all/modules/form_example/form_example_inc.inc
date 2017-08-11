@@ -9,7 +9,6 @@ function _get_rendering_element() {
 
   // ctools_include('modal');
   // ctools_modal_add_js();
-
   $elements = [];
   
   $getForm = drupal_get_form('form_example_form');
@@ -22,7 +21,7 @@ function _get_rendering_element() {
   );
 
   $elements['render_table'] = array(
-    '#markup' => _get_form_posted_data(),
+    '#markup' => _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$startRange=0, $endRange=10),
     '#prefix' => '<div class="custom_form_main_container"> <div class="project-summary-listing pull-left" id="form-example-data-listing">',
     '#suffix' => '</div></div>'
   );
@@ -116,6 +115,12 @@ function form_example_form($form, &$form_state, $node = NULL) {
     '#type' => 'hidden',
     '#title_display' => 'invisible',
     '#attributes' => array('class'=> array('form-control datatable_page_id')),
+  );
+
+  $form['page_number_id']= array(
+    '#type' => 'hidden',
+    '#title_display' => 'invisible',
+    '#attributes' => array('class'=> array('form-control page_number_id')),
   );
 
   $form['actions']['submit'] = array(
@@ -1079,7 +1084,9 @@ function form_example_edit_form_callback($form, $form_state) {
     $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
 
     // $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
-
+    // print "<pre>";
+    // print_r($form_state['values']['page_number_id']);
+    // exit;
     if(!empty($form_state['values']['datatable_page_id'])){
 
       $pageNo = $form_state['values']['datatable_page_id'];
@@ -1092,7 +1099,12 @@ function form_example_edit_form_callback($form, $form_state) {
         $from = ($pageNo - 1) * 10;
         $to = $pageNo * 10;
       }
-      
+
+      if(!empty($form_state['values']['page_number_id'])){
+        $from = 'select';
+        $to = $form_state['values']['datatable_page_id'];
+      }
+
       $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$from, $to));
     }
 
@@ -1357,26 +1369,21 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
   $execute_data = $query_data->execute();
 
   $row_count = $execute_data->rowCount();
-
-
-  if($startRange == 0)
-    $getEtcNodes = $query->range($startRange,10)->execute()->fetchAll();
-  else
-    $getEtcNodes = $query->range($endRange,10)->execute()->fetchAll();
-
   
-  // $result = $query->execute()->fetchAll() ;
+  if(($startRange == 0) || ($startRange == 'select')){
 
-  // $aded = clone $query;
-  // $aded_sayi = $aded->execute();
-  // $rakam = $aded_sayi->rowCount();  
-  // if($startRange == 'select') {
-  //   $getSpendingNodes = $query->range(0,$endRange)->execute()->fetchCol();
-  // }
-  // else { 
-  //   $getSpendingNodes = $query->range($endRange,5)->execute()->fetchCol();
-  // }
-
+    switch($startRange){
+      case 'select':
+        $getEtcNodes = $query->range(0,$endRange)->execute()->fetchAll();
+        break;
+      default:
+        $getEtcNodes = $query->range($startRange,10)->execute()->fetchAll();
+    }
+  }else{
+    // $getEtcNodes = $query->range($endRange,10)->execute()->fetchAll();
+    $getEtcNodes = $query->range($startRange,10)->execute()->fetchAll();
+  }
+  
   $getNodeIds = array();
   foreach ($getEtcNodes as $res_arr) {
       $getNodeIds[] = $res_arr->nid;
@@ -1489,9 +1496,9 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
   /*
   Using ajax pager
   **/
-  $outputBefore = _get_pager_option_data_list($projectId,'nextpage');
+  $outputBefore = _get_pager_option_data_list($projectId,'asset');
   if(!$ajax){
-    $output = theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet','attributes'=>array('class'=>array('table','custom-table','table-hover','table-bordered','text-center'))));       
+    $output = theme('table', array('header'=>$header,'rows'=>$rows,'empty'=>'No records yet','attributes'=>array('class'=>array('table','custom-table','m6connect-custom-program-table','table-hover','table-bordered','text-center'))));       
   }else{
     $output = theme('feedback_table_rows', array('header' => array(), 'rows' => $rows));
   }
@@ -1502,7 +1509,19 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
     $pagerGene .= '<li class="pager-current">'.l('<< First', 'get-next-page-data-example/nextpage/0/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-0')))).'</li>';
     if($row_count > 10) {
       $getpageLimit = $row_count/10;
-    $getpageLimit = ceil($getpageLimit);
+      
+      if($startRange == 'select'){
+        $getpageLimit = $row_count/$endRange;
+        $getpageLimit = ceil($getpageLimit);
+        variable_set('getpageLimit', $getpageLimit);
+      }
+      
+      $getpageLimit = ceil($getpageLimit);
+      
+      if(!empty(variable_get('getpageLimit')))
+        $getpageLimit = variable_get('getpageLimit');
+
+      variable_del('getpageLimit');
     }
     for($i = 1; $i<=$getpageLimit; $i++) {
       $pagerGene .= '<li class="pager-current">'.l($i, 'get-next-page-data-example/nextpage/'.$i.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-'.$i)))).'</li>';
@@ -1510,16 +1529,17 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
     $pagerGene .= '<li class="pager-current">'.l('Last >>', 'get-next-page-data-example/nextpage/'.$getpageLimit.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-0')))).'</li>';
     $pagerGene .= '</ul></div>';
   }
-  return $output.$pagerGene;
+  // return $output.$pagerGene;
+  return $outputBefore.$output.$pagerGene;
 }
 
 function _get_pager_option_data_list($projectId,$type) {
   $output = '<div class="item-data-list" style="display:none;"><ul class="pager-list">';
-  $output .= '<li class="pager-no-10">'.l(10, 'get-total-number-of-data-example/0/10/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-10')))).'</li><li class="pager-no-25">'.l(25, 'get-total-number-of-data-example/0/25/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-25')))).'</li><li class="pager-no-30">'.l(30, 'get-total-number-of-data-example/0/30/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-30')))).'</li><li class="pager-no-50">'.l(50, 'get-total-number-of-data-example/0/50/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-50')))).'</li><li class="pager-no-100">'.l(100, 'get-total-number-of-data-example/0/100/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-100')))).'</li></ul></div>';
+  $output .= '<li class="pager-no-10">'.l(10, 'get-total-number-of-data/0/10/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-10')))).'</li><li class="pager-no-20">'.l(20, 'get-total-number-of-data/0/20/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-20')))).'</li><li class="pager-no-30">'.l(30, 'get-total-number-of-data/0/30/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-30')))).'</li><li class="pager-no-50">'.l(50, 'get-total-number-of-data/0/50/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-50')))).'</li><li class="pager-no-100">'.l(100, 'get-total-number-of-data/0/100/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-100')))).'</li></ul></div>';
   $output .= '<div class="col-md-3 padding-0 margin-bottom-15 pull-left"><div class="item-list-select input-group"><span class="input-group-addon">Show Entries: </span>
           <select class="pager-load-more-to" name="pager-navigation-control" for="'.$projectId.'">
               <option value="10">10</option>
-                <option value="25">25</option>
+                <option value="20">20</option>
               <option value="30">30</option>
               <option value="50" selected="selected">50</option>
               <option value="100">100</option>
@@ -1554,10 +1574,16 @@ function get_next_page_data_records_example($type,$pageNo,$proId, $ajax = NULL) 
 function get_total_number_data_records_example($start,$end,$type,$proId,$ajax = NULL) {
   ctools_include('ajax');
   $commands = array();
-  
+
   if($type == 'nextpage') {
     // $output = get_commitment_listing_table_data($proId,'','', $ajax=FALSE, 'select', $end);
-    $output = _get_form_posted_data($proId,'','', $ajax=FALSE, $from, $to);
+    $output = _get_form_posted_data($proId,'','', $ajax=FALSE, $start, $end);
+    $commands[] = ajax_command_html('#form-example-data-listing', $output);
+  }
+
+  if($type == 'asset') {
+    // $output = get_commitment_listing_table_data($proId,'','', $ajax=FALSE, 'select', $end);
+    $output = _get_form_posted_data($proId,'','', $ajax=FALSE, 'select', $end);
     $commands[] = ajax_command_html('#form-example-data-listing', $output);
   }
     
