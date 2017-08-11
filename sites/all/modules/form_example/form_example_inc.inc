@@ -935,7 +935,24 @@ function form_example_form_submit($form, &$form_state) {
 
     if((isset($form_state['ajax']))?(($form_state['ajax']==1)?true:false):false) {
         $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
-        $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+
+        if(!empty($form_state['values']['datatable_page_id'])){
+
+          $pageNo = $form_state['values']['datatable_page_id'];
+
+          if($pageNo == 0 || $pageNo == 1) {
+            $from = 0;
+            $to = 10;
+          }
+          else {
+            $from = ($pageNo - 1) * 10;
+            $to = $pageNo * 10;
+          }
+          
+          $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$from, $to));
+        }
+
+        // $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
     }
 
   }else{
@@ -999,7 +1016,23 @@ function form_example_form_submit($form, &$form_state) {
     if((isset($form_state['ajax']))?(($form_state['ajax']==1)?true:false):false) {
         $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
         
-        $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+        if(!empty($form_state['values']['datatable_page_id'])){
+          
+          $pageNo = $form_state['values']['datatable_page_id'];
+
+          if($pageNo == 0 || $pageNo == 1) {
+            $from = 0;
+            $to = 10;
+          }
+          else {
+            $from = ($pageNo - 1) * 10;
+            $to = $pageNo * 10;
+          }
+          
+          $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$from, $to));
+        }
+
+        // $form_state['ajax_commands'][] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
     }
   }
 }
@@ -1045,7 +1078,24 @@ function form_example_edit_form_callback($form, $form_state) {
     
     $commands[] = ajax_command_replace('#asset-container-section', render($form['main-container-multi']));
 
-    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+    // $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+
+    if(!empty($form_state['values']['datatable_page_id'])){
+
+      $pageNo = $form_state['values']['datatable_page_id'];
+
+      if($pageNo == 0 || $pageNo == 1) {
+        $from = 0;
+        $to = 10;
+      }
+      else {
+        $from = ($pageNo - 1) * 10;
+        $to = $pageNo * 10;
+      }
+      
+      $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$from, $to));
+    }
+
     $commands[] = ajax_command_html('#form-example-image-listing', _get_image_table_data($edit_id));
   }  
 
@@ -1057,7 +1107,23 @@ function form_example_delete_callback($node_id, $no_js = NULL) {
   ctools_include('ajax');
   $commands = array();
   node_delete($node_id);  
-  $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data());
+
+  if(!empty($form_state['values']['datatable_page_id'])){
+
+    $pageNo = $form_state['values']['datatable_page_id'];
+
+    if($pageNo == 0 || $pageNo == 1) {
+      $from = 0;
+      $to = 10;
+    }
+    else {
+      $from = ($pageNo - 1) * 10;
+      $to = $pageNo * 10;
+    }
+    
+    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$from, $to));
+  }
+
   print ajax_render($commands); // this function exits.
   exit;
   /*We can use both exit or return bcoz after rendring of html and echo of it, function should to be halt and return some value*/
@@ -1480,7 +1546,7 @@ function get_next_page_data_records_example($type,$pageNo,$proId, $ajax = NULL) 
     $commands[] = ajax_command_html('#form-example-data-listing', $output);
   }
   
-  // $commands[] = ajax_command_invoke("input.datatable_page_id", 'val',array($pageNo));  
+  $commands[] = ajax_command_invoke("input.datatable_page_id", 'val',array($pageNo));  
   print ajax_render($commands);
   exit;   
 }
