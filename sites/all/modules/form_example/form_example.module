@@ -42,6 +42,22 @@ function form_example_menu() {
     'access arguments' => array('access content'), // whatever see above
   );
 
+  $items['examples/product-json'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'Apis Json Api', //page title
+    'description' => 'An api of node detail.',
+    'file' => 'form_example_prd_api_inc.inc',
+    'page callback' => '_get_prd_api_json',
+    'access arguments' => array('access content'), // whatever see above
+  );
+
+  $items['examples/category-json'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'Category Json Api', //page title
+    'description' => 'An api of node detail.',
+    'file' => 'form_example_prd_api_inc.inc',
+    'page callback' => '_get_cat_api_json',
+    'access arguments' => array('access content'), // whatever see above
+  );
+
   $items['examples/form-json2'] = array( //this creates a URL that will call this form at "examples/form-example"
     'title' => 'Apis Example Form', //page title
     'description' => 'An api of node detail.',
@@ -404,4 +420,76 @@ function form_example_permission(){
     );
 }
 
-?>
+function taxonomy_get_children_all($tid, $vid = 13, $key = 'tid'){
+  $c = taxonomy_get_children($tid, $vid, $key);
+  foreach ($c as $t => $d){
+    $result[$t] = $d;
+    $below = taxonomy_get_children_all($t, $vid, $key);
+    if (!empty($below)) {
+      foreach ($below as $nt => $nd){
+        $result[$nt] = $nd;
+      }
+    }
+  }
+  return $result;
+}
+
+function _get_all_children_simplified($d) {
+  $return = array();
+  $return = _get_all_children_recursivelly($d, $return);
+  return $return;
+}
+
+function _get_all_children_recursivelly($d, $return) {
+  foreach ($d as $key => $value) {
+    $tid = $value->tid;
+    $parent = $value->parents;
+    $parent_tid = array_shift($parent);
+
+    $is_this_tid_has_parents = _get_tid_parents($return, $parent_tid);
+    if ($is_this_tid_has_parents) {
+      _set_child_to_parent($return, $parent_tid, $tid);
+    }
+    else {
+      $return[$parent_tid][$tid] = $tid;
+    }
+    // dpm($return, '$return');
+  }
+
+  return $return;
+}
+
+function _set_child_to_parent(&$return, $parent_tid, $tid) {
+  dpm($return, '$return');
+  foreach ($return as $key => $value) {
+    if ($key == $parent_tid) {
+      $return[$key][$tid] = $tid;
+    }
+    if (is_array($value)) {
+      _set_child_to_parent($value, $parent_tid, $tid);
+    }
+  }
+}
+
+
+function _get_tid_parents($return, $parent_tid) {
+  if (empty($return)) {
+    return FALSE;
+  }
+
+  if (!is_array($return)) {
+    return FALSE;
+  }
+
+  foreach ($return as $key => $value) {
+    if ($key == $parent_tid) {
+      return TRUE;
+    }
+
+    if (is_array($value)) {
+      return _get_tid_parents($value, $parent_tid);
+    }
+  }
+
+  return FALSE;
+}
