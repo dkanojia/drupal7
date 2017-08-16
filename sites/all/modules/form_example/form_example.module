@@ -441,29 +441,42 @@ function _get_all_children_simplified($d) {
 }
 
 function _get_all_children_recursivelly($d, $return) {
+  $par_arr = [];
+  $par_tid_arr = [];
   foreach ($d as $key => $value) {
     $tid = $value->tid;
+    echo $tid ."Tid"."\n";
     $parent = $value->parents;
+    $par_arr [] = $value->parents;
+    
     $parent_tid = array_shift($parent);
+    echo $parent_tid ."Pid"."\n";
+    $par_tid_arr [] = $parent_tid;
 
     $is_this_tid_has_parents = _get_tid_parents($return, $parent_tid);
     if ($is_this_tid_has_parents) {
       _set_child_to_parent($return, $parent_tid, $tid);
     }
     else {
-      $return[$parent_tid][$tid] = $tid;
+      $return[$parent_tid][] = $tid;
     }
-    // dpm($return, '$return');
   }
+  print "<pre>";
+  print "par_arr";
+  print_r($par_arr);
+  print "<br/>";
+  print "<pre>";
+  print "par_tid_arr";
+  print_r($par_tid_arr);
+  print "<br/>";
 
   return $return;
 }
 
 function _set_child_to_parent(&$return, $parent_tid, $tid) {
-  dpm($return, '$return');
   foreach ($return as $key => $value) {
     if ($key == $parent_tid) {
-      $return[$key][$tid] = $tid;
+      $return[$key][] = $tid;
     }
     if (is_array($value)) {
       _set_child_to_parent($value, $parent_tid, $tid);
