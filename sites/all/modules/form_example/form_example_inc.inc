@@ -1142,6 +1142,57 @@ function form_example_delete_callback($node_id, $no_js = NULL) {
   // return;
 }
 
+function form_example_update_callback($node_id, $val ,$no_js = NULL) {
+  ctools_include('ajax');
+  $commands = array();
+
+  if(!empty($node_id)){
+    $node = [];
+    $node = node_load($node_id);
+    
+    switch ($val) {
+      case 1:
+        $status_name = 'Approved';
+        break;
+      case 2:
+        $status_name = 'Canceled';
+        break;
+      case 3:
+        $status_name = 'Rejected';
+        break;
+      default:
+        $status_name = 'Draft';
+        break;
+    }
+
+    // add node properties
+    $node->field_flag_value = $val;
+    $node->field_status = $status_name;
+    node_save($node);
+  }
+
+  if(!empty($form_state['values']['datatable_page_id'])){
+
+    $pageNo = $form_state['values']['datatable_page_id'];
+
+    if($pageNo == 0 || $pageNo == 1) {
+      $from = 0;
+      $to = 10;
+    }
+    else {
+      $from = ($pageNo - 1) * 10;
+      $to = $pageNo * 10;
+    }
+    
+    $commands[] = ajax_command_html('#form-example-data-listing', _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$ajax=FALSE,$from, $to));
+  }
+
+  print ajax_render($commands); // this function exits.
+  exit;
+  /*We can use both exit or return bcoz after rendring of html and echo of it, function should to be halt and return some value*/
+  // return;
+}
+
 /**
  * Ajax menu callback.
  */
@@ -1353,6 +1404,7 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
     array('data'=>'Edit Link'),
     array('data'=>'Delete Link'),
     array('data'=>'Edit Link Using Pop Up Modal'),
+    array('data'=>'Actions'),
   );  
   $i = 1;
 
@@ -1414,6 +1466,71 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
                     )
                   );
 
+    $flag_val = intval($loadNodeData->field_flag_value);
+    $status = ['Draft','Approve','Canceled','Reject'];
+    $status_name = '';
+
+    switch ($flag_val) {
+      case 1:
+        $status = array_diff($status, array('Approve'));
+        $status_name = 'Approved';
+        break;
+      case 2:
+        $status = array_diff($status, array('Canceled'));
+        $status_name = 'Canceled';
+        break;
+      case 3:
+        $status = array_diff($status, array('Reject'));
+        $status_name = 'Rejected';
+        break;
+      default:
+        $status = array_diff($status, array('Draft'));
+        $status_name = 'Draft';
+        break;
+    }
+
+    $all_link = '';
+    foreach ($status as $key => $value) {
+      $all_link .= l($value,
+                      url('node-update/' . $nids.'/'.$flag_val.'/nojs'), 
+                      array( 
+                        'external'=>TRUE, 
+                        'attributes'=> array(
+                          'class'=>array('node-detail-update','dropdown-item','use-ajax')
+                          )
+                        )
+                      );
+    }
+
+    $actions = '<div class="dropdown show">'.
+                  l($status_name,
+                    url('https://example.com'), 
+                    array(
+                      'attributes' => array(
+                        'class' => array(
+                          'btn btn-secondary dropdown-toggle'
+                          ),
+                        'id' => array(
+                          'dropdownMenuLink'
+                          ),
+                        'data-toggle' => array(
+                          'dropdown'
+                          ),
+                        'aria-haspopup' => array(
+                          'true'
+                          ),
+                        'aria-expanded' => array(
+                          'false'
+                          ),
+                        )
+                      )
+                    )
+                  .'
+                  <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                  '.$all_link.'
+                  </div>
+                </div>';
+
     ctools_include('modal');
     ctools_modal_add_js();
 
@@ -1451,6 +1568,7 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
           //   )
           // )
         array('data'=>$edit_link_for_popup),
+        array('data'=>$actions),
                   
       ),  
     );
@@ -1536,7 +1654,7 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
 function _get_pager_option_data_list($projectId,$type) {
   $output = '<div class="item-data-list" style="display:none;"><ul class="pager-list">';
   $output .= '<li class="pager-no-10">'.l(10, 'get-total-number-of-data/0/10/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-10')))).'</li><li class="pager-no-20">'.l(20, 'get-total-number-of-data/0/20/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-20')))).'</li><li class="pager-no-30">'.l(30, 'get-total-number-of-data/0/30/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-30')))).'</li><li class="pager-no-50">'.l(50, 'get-total-number-of-data/0/50/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-50')))).'</li><li class="pager-no-100">'.l(100, 'get-total-number-of-data/0/100/'.$type.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-100')))).'</li></ul></div>';
-  $output .= '<div class="col-md-3 padding-0 margin-bottom-15 pull-left"><div class="item-list-select input-group"><span class="input-group-addon">Show Entries: </span>
+  $output .= '<div class="margin-bottom-15"><div class="item-list-select input-group"><span class="input-group-addon">Show Entries: </span>
           <select class="pager-load-more-to" name="pager-navigation-control" for="'.$projectId.'">
               <option value="10">10</option>
                 <option value="20">20</option>
