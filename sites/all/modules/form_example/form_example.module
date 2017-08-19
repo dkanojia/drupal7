@@ -420,14 +420,61 @@ function form_example_permission(){
     );
 }
 
+function get_nested_array($d,$parent_tid){
+  
+  $return = [];
+  $return = get_recursively($d,$return,$parent_tid);
+  return $return;
+}
+
+function get_recursively($d,$return,$par_tid){
+
+  $keys = [];
+  $keys = ['0' => 'cat_tid', '1' => 'cat_vid', '2' => 'name', '3' => 'description', '4' => 'child'];
+  
+  foreach ($d as $key => $value) {
+    $parent = $value->parents;
+    $parent_tid = array_shift($parent);
+    $tid = $value->tid;
+
+    // print "tid";
+    // echo $tid;
+    // print "\n";
+    // print "parent_tid";
+    // echo $parent_tid;
+    // print "\n";
+    
+    $return_key = [];
+    foreach ($keys as $key_value) {
+      
+      if($key_value == 'cat_tid')
+        $val = $tid;
+      elseif($key_value == 'cat_vid')
+        $val = $value->vid;
+      elseif($key_value == 'name')
+        $val = $value->name;
+      elseif($key_value == 'description')
+        $val = $value->description;
+      elseif($key_value == 'child')
+        $val = '';
+
+      $return_key [$key_value] = $val;
+    }
+    
+    $return [] = $return_key;
+  }
+  return $return;
+}
+
 function taxonomy_get_children_all($tid, $vid = 13, $key = 'tid'){
+  $result = [];
   $c = taxonomy_get_children($tid, $vid, $key);
   foreach ($c as $t => $d){
-    $result[$t] = $d;
+    $result[$t][$d] = $d;
     $below = taxonomy_get_children_all($t, $vid, $key);
     if (!empty($below)) {
       foreach ($below as $nt => $nd){
-        $result[$nt] = $nd;
+        $result[$t][$nt] = $nd;
       }
     }
   }
@@ -441,45 +488,69 @@ function _get_all_children_simplified($d) {
 }
 
 function _get_all_children_recursivelly($d, $return) {
-  $par_arr = [];
-  $par_tid_arr = [];
   foreach ($d as $key => $value) {
     $tid = $value->tid;
-    echo $tid ."Tid"."\n";
     $parent = $value->parents;
-    $par_arr [] = $value->parents;
     
     $parent_tid = array_shift($parent);
-    echo $parent_tid ."Pid"."\n";
-    $par_tid_arr [] = $parent_tid;
 
     $is_this_tid_has_parents = _get_tid_parents($return, $parent_tid);
     if ($is_this_tid_has_parents) {
       _set_child_to_parent($return, $parent_tid, $tid);
     }
     else {
-      $return[$parent_tid][] = $tid;
+      $return [$parent_tid][] = $tid;
     }
   }
-  print "<pre>";
-  print "par_arr";
-  print_r($par_arr);
-  print "<br/>";
-  print "<pre>";
-  print "par_tid_arr";
-  print_r($par_tid_arr);
-  print "<br/>";
 
   return $return;
 }
 
 function _set_child_to_parent(&$return, $parent_tid, $tid) {
+  print "child arr";
+  print_r($return);
+  print "\n";
   foreach ($return as $key => $value) {
     if ($key == $parent_tid) {
-      $return[$key][] = $tid;
+      print "up tid -";
+      print $tid;
+      print "\n";
+      print "up p_id -";
+      print $parent_tid;
+      print "\n";
+      print "up key -";
+      print_r($key);
+      print "\n";
+      print "change for key";
+      print "\n";
+      return $return[$key][] = $tid;
+    }else{
+      print "\n";
+      print "not equal key";
+      print "\n";
+      print "change for key";
+      print "\n";
     }
+
     if (is_array($value)) {
+      print "tid -";
+      print $tid;
+      print "\n";
+      print "p_id -" ;
+      print $parent_tid;
+      print "\n";
+      print "value -" ;
+      print_r($value);
+      print "\n";
+      print "change for value" ;
+      print "\n";
       _set_child_to_parent($value, $parent_tid, $tid);
+    }else{
+      print "\n";
+      print "not value array" ;
+      print "\n";
+      print "change for key" ;
+      print "\n";
     }
   }
 }
@@ -500,7 +571,7 @@ function _get_tid_parents($return, $parent_tid) {
     }
 
     if (is_array($value)) {
-      return _get_tid_parents($value, $parent_tid);
+      _get_tid_parents($value, $parent_tid);
     }
   }
 
