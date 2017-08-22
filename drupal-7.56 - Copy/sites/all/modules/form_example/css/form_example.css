@@ -1,0 +1,107 @@
+
+#edit-title{
+  font-size: xx-large;
+  color: green;
+}
+#edit-main-container-multi{
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+.dropdown-item{
+  display: block;
+  width: 100%;
+  padding: 3px 1.5rem;
+  clear: both;
+  font-weight: 400;
+  color: #292b2c;
+  text-align: inherit;
+  white-space: nowrap;
+  background: 0 0;
+  border: 0;
+}
+
+/*caret css*/
+/*
+display: inline-block;
+width: 0;
+height: 0;
+margin-left: 2px;
+vertical-align: middle;
+border-top: 4px dashed;
+    border-top-width: 4px;
+    border-top-style: dashed;
+    border-top-color: currentcolor;
+border-top: 4px solid\9;
+border-right: 4px solid transparent;
+    border-right-width: 4px;
+    border-right-style: solid;
+    border-right-color: transparent;
+border-left: 4px solid transparent;
+*/
+
+.droopdown-menu{
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  float: left;
+  min-width: 10rem;
+  padding: .5rem 0;
+  margin: .125rem 0 0;
+  font-size: 1rem;
+  color: #292b2c;
+  text-align: left;
+  list-style: none;
+  background-color: #fff;
+  /*-webkit-background-clip: padding-box;*/
+  background-clip: padding-box;
+  border: 1px solid rgba(0,0,0,.15);
+  border-radius: .25rem;
+
+}
+
+.btn-secondary {
+    color: #292b2c;
+    background-color: #fff;
+    border-color: #ccc;
+}
+
+
+.btn-secondary {
+    color: #292b2c;
+    background-color: #fff;
+    border-color: #ccc;
+}
+.btn {
+    display: inline-block;
+    font-weight: 400;
+    line-height: 1.25;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+   /* -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;*/
+    border: 1px solid transparent;
+        /*border-top-color: transparent;
+        border-right-color: transparent;
+        border-bottom-color: transparent;
+        border-left-color: transparent;*/
+    padding: .5rem 1rem;
+    font-size: 1rem;
+    border-radius: .25rem;
+    /*-webkit-transition: all .2s ease-in-out;
+    -o-transition: all .2s ease-in-out;*/
+    transition: all .2s ease-in-out;
+}
+  /*.name-textbox {
+    font-size: large;
+    color: green;
+  }
+
+  #custom-form-radios div{
+    display:inline;
+  }*/
