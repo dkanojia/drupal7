@@ -1,5 +1,0 @@
-name = Custome module
-description = Custome module for developing purose
-core = 7.x
-package = My Modules 
-version = "7.x-1.0-rc5"

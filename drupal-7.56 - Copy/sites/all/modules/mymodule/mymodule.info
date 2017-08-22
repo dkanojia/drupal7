@@ -1,4 +1,0 @@
-name = My Module
-description = Module for developing my modules
-core = 7.x
-dependencies[]=ctools
