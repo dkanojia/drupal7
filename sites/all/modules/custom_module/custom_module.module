@@ -1,0 +1,267 @@
+<?php
+/**
+ * Implements hook_menu()
+ */
+
+function custom_module_menu() {
+  $items = array();
+  $items['table/list'] = array(
+    'title' => 'Node List',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_list_table'),
+    'access arguments' => array("access content"),
+    'type' => MENU_CALLBACK
+  );
+  return $items;
+}
+
+function _list_table($form, &$form_state){
+
+  $header = array(
+    array('data' => t('Sr No.'),'field' => 'sr_number'),
+    array('data' => t('Title'),'field' => 'title'),
+    array('data' => t('Image'),'field' => 'image'),
+    array('data' => t('Edit Link'),'field' => 'edit'),
+    array('data' => t('Delete Link'),'field' => 'delete'),
+    array('data' => t('Node created time'),'field' => 'created'),
+  );
+
+  // Check if there is sorting request
+  if(isset($_GET['sort']) && isset($_GET['order'])){
+    // Sort it Ascending or Descending?
+    if($_GET['sort'] == 'asc')
+      $sort = 'ASC';
+    else
+      $sort = 'DESC';
+     // Which column will be sorted
+      switch($_GET['order']){
+        case 'Title':
+          $order = 'title';
+          break;
+        default:
+          $order = 'title';
+     }
+   }
+   else {
+     // Default sort
+     $sort = 'ASC';
+     $order = ' title';
+   }
+
+    // $per_page_limit = 25;
+
+    // $query = db_select('node','n');
+    // $query->fields('n');
+    // $query->condition('n.type','newsletter');
+
+    // $query->orderBy($order, $sort);
+
+    // $query = $query->extend('TableSort')->extend('PagerDefault')->limit($per_page_limit);
+
+    // $query = db_select('commerce_order', 'co');
+    //    $query->leftJoin('commerce_line_item', 'li', 'li.order_id = co.order_id');
+    //    $query->leftJoin('field_data_commerce_product', 'prod', 'li.line_item_id = prod.entity_id');
+    //    $query->leftJoin('commerce_product', 'p', 'prod.commerce_product_product_id = p.product_id');
+    //    $query->leftJoin('field_data_field_product_quiz_id', 'p_nid', 'p.product_id = p_nid.entity_id');
+    //    $query->leftJoin('node', 'n', 'p_nid.field_product_quiz_id_nid = n.nid');
+    //    $query->leftJoin('users', 'u', 'co.uid = u.uid');
+    
+    //    $result = $query
+    //    ->fields('co', array('order_id', 'order_number', 'status','created'))
+    //    ->fields('p', array('title'))
+    //    ->fields('n',array('nid','created'))
+    //    ->fields('u', array('name','uid'))
+    //    ->orderBy($order, $sort)
+    //    ->extend('TableSort')->extend('PagerDefault')->limit(25)
+    //    ->execute();
+
+    // if (isset($form_state['filters']['quiz'])) {
+    //   $query->condition('p.title', '%' . db_like($form_state['filters']['quiz']) . '%', 'LIKE');
+    // }
+
+    $form = array();
+     
+    $form['filter'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#title' => t('Filter option')
+    );
+    
+    $form['filter']['title'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Node title'),
+      '#size' => 15,
+      '#ajax' => array(      
+            'callback' => '_callback_search_string_return',      
+            'wrapper' => 'draggable-id',
+            'method' => 'replace',
+            'effect' => 'fade',  
+            'event' => 'keyup',    
+          ),
+    );
+
+    $form['filter']['filter_group'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Group name'),
+      '#size' => 15,
+    );
+
+    $form['filter']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Filter'),
+    );
+
+    // if (isset($form_state['filters']['title'])) {
+    //   $query->condition('n.title', '%' . db_like($form_state['filters']['title']) . '%', 'LIKE');
+    // }
+
+    // $result = $query->execute()->fetchAll() ;
+    
+    // $getNodeIds = array();
+    // foreach ($result as $res_arr) {
+    //     $getNodeIds[] = $res_arr->nid;
+    // }
+
+    $rows = array();
+    // Looping for filling the table rows
+
+    // if(isset($_GET['page'])){
+    //   $i = $per_page_limit * $_GET['page']; 
+    //   $i++;
+    // }else{
+    //   $i = 1;
+    // }
+
+    // foreach ($getNodeIds  as $delta => $nids) {
+    //   $nod = node_load($nids);
+    //   // // Fill the table rows
+    //   // $rows[] = array(
+    //   //  l($ord->order_number, 'admin/commerce/orders/'. $ord->order_id .'/edit'),
+    //   //  l($ord->name, 'user/'. $ord->uid .'/edit'),
+    //   //  l($ord->title, 'node/'. $ord->nid.'/edit'),
+    //   //   $ord->status,
+    //   //   format_date($ord->created,'custom','d-M-Y',date_default_timezone()) ,
+    //   //   format_date($ord->n_created,'custom','d-M-Y',date_default_timezone()) ,
+    //   // );
+
+    //   if(isset($nod->field_image_testing['und']['0']['uri']))
+    //     $img_url = file_create_url($nod->field_image_testing['und']['0']['uri']);
+    //   else
+    //     $img_url = "http://no_image";
+
+    //   $rows[] = array(
+    //     'data' => array(  
+    //       array('data'=>$i),    
+    //       array('data'=>$nod->title,'class'=> array('text-left')),        
+    //       array('data'=>'<img src="'.$img_url.'" alt="photo" style="width:100px;height:125px">','class'=> array('text-left')),      
+    //       array('data'=>'edit_link'),        
+    //       array('data'=>'delete_link'),
+    //       array('data'=> format_date($nod->created,'custom','d-M-Y',date_default_timezone()) ),
+    //     ),  
+    //   );
+      
+    //   $i++;
+    // }
+
+    $search_string = '';
+
+    if (isset($form_state['filters']['title'])) {
+      $rows = _get_rows($order, $sort, $form_state['filters']['title']);
+    }else{
+      $rows = _get_rows($order, $sort, $search_string);
+    }
+
+    $form['table'] = array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#empty' => t('Table has no row!'),
+      '#prefix' => '<div id="form-example-data-list">',
+      '#suffix' => '</div>'
+    );
+
+    $form['pager'] = array('#markup' => theme('pager'));
+    return $form;
+}
+
+function _list_table_submit($form, &$form_state) {
+  $form_state['filters']['title'] = $form_state['values']['title'];
+  $form_state['rebuild'] = TRUE;
+}
+
+function _get_rows($ord, $sort, $search_string){
+
+  $rows = array();
+
+  $per_page_limit = 25;
+
+  $query = db_select('node','n');
+  $query->fields('n');
+  $query->condition('n.type','newsletter');
+
+  $query->orderBy($ord, $sort);
+  
+  $query = $query->extend('TableSort')->extend('PagerDefault')->limit($per_page_limit);
+  
+  if(!empty($search_string))
+    $query->condition('n.title', '%' . db_like($search_string) . '%', 'LIKE');
+
+  $result = $query->execute()->fetchAll() ;
+  
+  $getNodeIds = array();
+  foreach ($result as $res_arr) {
+      $getNodeIds[] = $res_arr->nid;
+  }
+
+  $rows = array();
+  // Looping for filling the table rows
+
+  if(isset($_GET['page'])){
+    $i = $per_page_limit * $_GET['page']; 
+    $i++;
+  }else{
+    $i = 1;
+  }
+
+  foreach ($getNodeIds  as $delta => $nids) {
+    $nod = node_load($nids);
+
+    if(isset($nod->field_image_testing['und']['0']['uri']))
+      $img_url = file_create_url($nod->field_image_testing['und']['0']['uri']);
+    else
+      $img_url = "http://no_image";
+
+    $rows[] = array(
+      'data' => array(  
+        array('data'=>$i),    
+        array('data'=>$nod->title,'class'=> array('text-left')),        
+        array('data'=>'<img src="'.$img_url.'" alt="photo" style="width:100px;height:125px">','class'=> array('text-left')),      
+        array('data'=>'edit_link'),        
+        array('data'=>'delete_link'),
+        array('data'=> format_date($nod->created,'custom','d-M-Y',date_default_timezone()) ),
+      ), 
+      'class' => array('draggable'), 
+      'id' => array('draggable-id'), 
+    );
+    
+    $i++;
+  }
+
+  return $rows;
+
+}
+
+// function _callback_search_string_return($form, &$form_state,  $no_js = NULL){
+function _callback_search_string_return($form, &$form_state){
+  $search_string = $form_state['values']['title'];
+  $sort = 'ASC';
+  $order = 'title';
+  $rows = array();
+  $rows[] = ajax_command_html('#draggable-id', _get_rows($order, $sort, $search_string));
+  // return $rows;
+  return array('#type' => 'ajax', '#commands' => $rows);
+  // print ajax_render($rows); // this function exits.
+  // exit;
+}
+
