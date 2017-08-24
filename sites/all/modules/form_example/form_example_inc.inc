@@ -1455,9 +1455,15 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
     }
   }else{
     // $getEtcNodes = $query->range($endRange,10)->execute()->fetchAll();
-    $getEtcNodes = $query->range($startRange,10)->execute()->fetchAll();
+    if(!empty(variable_get('to'))){
+      $to = variable_get('to');
+      $getEtcNodes = $query->range($startRange,$to)->execute()->fetchAll();
+    }
+    else{
+      $getEtcNodes = $query->range($startRange,10)->execute()->fetchAll();
+    }
   }
-  
+
   $getNodeIds = array();
   foreach ($getEtcNodes as $res_arr) {
       $getNodeIds[] = $res_arr->nid;
@@ -1675,6 +1681,10 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
         variable_set('getpageLimit', $getpageLimit);
       }
       
+      if(!empty(variable_get('to'))){
+        $getpageLimit = $row_count/$endRange;
+      }
+
       $getpageLimit = ceil($getpageLimit);
       
       if(!empty(variable_get('getpageLimit')))
@@ -1688,6 +1698,7 @@ function _get_form_posted_data($projectId = 1,$filterFor = '', $filterVal='',$aj
     $pagerGene .= '<li class="pager-current">'.l('Last >>', 'get-next-page-data-example/nextpage/'.$getpageLimit.'/'.$projectId.'/nojs', array('attributes' => array('class' => array('use-ajax','page-range-0')))).'</li>';
     $pagerGene .= '</ul></div>';
   }
+  variable_del('to');
   // return $output.$pagerGene;
   return $outputBefore.$output.$pagerGene;
 }
@@ -1742,12 +1753,38 @@ function get_total_number_data_records_example($start,$end,$type,$proId,$ajax = 
   }
 
   if($type == 'asset') {
-    // $output = get_commitment_listing_table_data($proId,'','', $ajax=FALSE, 'select', $end);
-    $output = _get_form_posted_data($proId,'','', $ajax=FALSE, 'select', $end);
+
+    $from = $start;
+    $to = $end;
+    // if(!empty($form_state['values']['datatable_page_id'])){
+    if(!empty(variable_get('page_no'))){
+
+      $pageNo = variable_get('page_no');
+
+      if($pageNo == 0 || $pageNo == 1) {
+        $from = 0;
+        $to = $end;
+      }
+      else {
+        $from = ($pageNo - 1) * 10;
+        // $to = $pageNo * 10;
+        $to = $from + $end;
+      }
+    }
+
+    variable_set('to', $to);
+
+    if($from == 0)
+      $output = _get_form_posted_data($proId,'','', $ajax=FALSE, 'select', $to);
+    else
+      $output = _get_form_posted_data($proId,'','', $ajax=FALSE, $from, $to);
+      
     $commands[] = ajax_command_html('#form-example-data-listing', $output);
   }
+
     
-  $commands[] = ajax_command_invoke("select.pager-load-more-to", 'val',array($end));
+  // $commands[] = ajax_command_invoke("select.pager-load-more-to", 'val',array($end));
+  $commands[] = ajax_command_invoke("select.pager-load-more-to", 'val',array($to));
   // variable_set('page_no', $end);
   print ajax_render($commands);
   exit;   
