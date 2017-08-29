@@ -5,6 +5,9 @@
  * Custom form in custom module.
  */
 
+/**
+ * Implements hook_menu().
+ */
 function form_example_menu() {
   $items = array();
 
@@ -359,6 +362,9 @@ function form_example_edit_form_submit($form, &$form_state)
   drupal_set_message('My Edited Node No :'.$item->nid);
 }
 
+/**
+ * Implements hook_cron().
+ */
 function form_example_cron(){
   
   drupal_add_js('jQuery(document).ready(function () { alert("Hello!"); });', 'inline');
@@ -404,6 +410,9 @@ function custom_func(){
 //   return $elements;
 // }
 
+/**
+ * Implements hook_block_info().
+ */
 function form_example_block_info() {
   // This example comes from node.module.
   $blocks['first_custom_block'] = array(
@@ -419,6 +428,9 @@ function form_example_block_info() {
   return $blocks;
 }
 
+/**
+ * Implements hook_block_view().
+ */
 function form_example_block_view($delta = '') {
   // This example is adapted from node.module.
   $block = array();
@@ -447,6 +459,9 @@ function form_example_block_view($delta = '') {
   return $block;
 }
 
+/**
+ * Implements hook_permission().
+ */
 function form_example_permission(){
   return array(
       'administer my module' => array(
@@ -456,11 +471,92 @@ function form_example_permission(){
     );
 }
 
+/**
+ * Implements hook_views_api().
+ */
+function form_example_views_api() {
+  return array(
+    'api' => 3.0,
+    'path' => drupal_get_path('module', 'form_example') . '/includes/views',
+  );
+}
+
+/**
+* Implements hook_node_submit().
+*/
+function form_example_node_submit($node, $form, &$form_state) {
+  // print_r($node);
+  // exit;
+  // Set new event title.
+  $title_name = 'Implementing Hook Node';
+
+  // Update node title.
+  $node->title = $title_name;
+}
+
+/**
+*
+* Implements hook_node_update()
+*
+* Update Page @ node/nid/edit , Page title will be saved with  current date extension.
+*
+* Act on a node being inserted or updated.
+*
+* This hook is invoked from node_save() before the node is saved to the
+* database.
+*
+* @param $node
+* The node that is being updated.
+*
+* @ingroup node_api_hooks
+*/
+function form_example_node_update($node) {
+  dpm($node);
+  if ($node->type =='newsletter') {
+    // Alter title, add time stamp at the end of title:
+    $node->title = $node->title.' '.date('M j Y h:i A');
+  }
+  // In this node title with Updated date time extension 
+}
+
+
 function get_nested_array($d,$parent_tid){
   
   $return = [];
   $return = get_recursively($d,$return,$parent_tid);
   return $return;
+}
+
+function form_example_entity_presave($entity, $type) {
+  if($type == 'node'){
+    // $entity->changed = REQUEST_TIME;
+    $entity->title = $entity->title .' testing ';
+  }
+}
+
+function form_example_entity_load($entities, $type) {
+  foreach ($entities as $entity) {
+    // $entity->foo = mymodule_add_something($entity, $type);
+  }
+}
+
+function form_example_entity_prepare_view($entities, $type, $langcode) {
+  // Load a specific node into the user object for later theming.
+  // exit;
+  // print "<pre>";
+  // print_r($entities);
+  
+  if ($type == 'user') {
+    $nodes = form_example_get_user_nodes(array_keys($entities));
+    $arr = [];
+    foreach ($entities as $uid => $entity) {
+      $arr [] = $uid;
+      // $entity->user_node = $nodes[$uid];
+    }
+    print "<pre>";
+    print_r($arr);
+    // die;
+  }
 }
 
 function get_recursively($d,$return,$par_tid){
