@@ -1,0 +1,3 @@
+name = Sql Module
+description = Module for developing sql files
+core = 7.x

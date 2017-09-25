@@ -1184,7 +1184,7 @@ function node_save($node) {
     node_access_acquire_grants($node);
 
     // Clear internal properties.
-    unset($node->is_new);
+    unset($node->is_new); 
     unset($node->original);
     // Clear the static loading cache.
     entity_get_controller('node')->resetCache(array($node->nid));
